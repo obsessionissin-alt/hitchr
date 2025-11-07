@@ -2,7 +2,7 @@
 // Run with: node seed-mock-pilots.js
 
 require('dotenv').config();
-const { pool } = require('./config/database');
+const { pool } = require('./database');
 
 const MOCK_PILOTS = [
   {
