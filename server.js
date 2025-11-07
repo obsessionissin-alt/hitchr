@@ -95,7 +95,7 @@ const startServer = async () => {
     initializeSocket(server);
     
     console.log('📍 Starting proximity detection service...');
-    // startProximityService();
+    startProximityService();
     
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`\n✅ Server running on port ${PORT}`);

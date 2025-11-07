@@ -1,209 +1,319 @@
 // src/screens/MapScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  RefreshControl,
   ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Dimensions,
+  Alert,
 } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../store/AuthContext';
 import api from '../services/api';
+import locationService from '../services/location';
+import PilotProfileModal from '../components/PilotProfileModal';
+
+const { width, height } = Dimensions.get('window');
 
 interface Pilot {
   id: string;
   name: string;
-  phone: string;
   rating: number;
-  total_rides: number;
-  token_balance: number;
-  distance?: number;
+  totalRides: number;
+  latitude: number;
+  longitude: number;
+  distance: number;
+  vehicle?: { type: string; model: string };
 }
 
 export default function MapScreen({ navigation }: any) {
   const { user } = useAuth();
+  const mapRef = useRef<MapView>(null);
+  
   const [pilots, setPilots] = useState<Pilot[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedPilot, setSelectedPilot] = useState<string | null>(null);
+  const [selectedPilot, setSelectedPilot] = useState<Pilot | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
-  const userLocation = { lat: 30.395359, lng: 77.966561 }; // Aligarh
+  // Request location permission and get current location
+  useEffect(() => {
+    initializeLocation();
+  }, []);
 
-  const fetchNearbyPilots = async () => {
+  const initializeLocation = async () => {
     try {
-      const response = await api.get('/nearby/pilots', {
-        params: {
-          lat: userLocation.lat,
-          lng: userLocation.lng,
-          radius: 5000, // 5km
-        },
-      });
-      setPilots(response.data || []);
+      const hasPermission = await locationService.requestPermissions();
+      if (hasPermission) {
+        const location = await locationService.getCurrentLocation();
+        if (location) {
+          const loc = { lat: location.latitude, lng: location.longitude };
+          setUserLocation(loc);
+          fetchNearbyPilots(loc.lat, loc.lng);
+        } else {
+          // Fallback to default location (Aligarh)
+          const defaultLoc = { lat: 28.6139, lng: 77.2090 };
+          setUserLocation(defaultLoc);
+          fetchNearbyPilots(defaultLoc.lat, defaultLoc.lng);
+        }
+      } else {
+        // Fallback if permission denied
+        const defaultLoc = { lat: 28.6139, lng: 77.2090 };
+        setUserLocation(defaultLoc);
+        fetchNearbyPilots(defaultLoc.lat, defaultLoc.lng);
+        Alert.alert('Location Permission', 'Please enable location to find nearby pilots');
+      }
+    } catch (error) {
+      console.error('Location initialization error:', error);
+      const defaultLoc = { lat: 28.6139, lng: 77.2090 };
+      setUserLocation(defaultLoc);
+      fetchNearbyPilots(defaultLoc.lat, defaultLoc.lng);
+    }
+  };
+
+  const fetchNearbyPilots = async (lat: number, lng: number) => {
+    try {
+      setLoading(true);
+      const response = await api.getNearbyPilots(lat, lng, 5000); // 5km radius
+      setPilots(response.pilots || []);
     } catch (error) {
       console.error('Error fetching pilots:', error);
+      setPilots([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchNearbyPilots();
-  }, []);
-
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchNearbyPilots();
+    if (userLocation) {
+      setRefreshing(true);
+      fetchNearbyPilots(userLocation.lat, userLocation.lng);
+    }
   };
 
-  const handleRequestRide = async (pilotId: string) => {
+  const handlePilotPress = (pilot: Pilot) => {
+    setSelectedPilot(pilot);
+    setShowProfileModal(true);
+    // Center map on pilot
+    if (mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: pilot.latitude,
+        longitude: pilot.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      });
+    }
+  };
+
+  const handleNotifyPilot = async () => {
+    if (!selectedPilot || !userLocation) {
+      Alert.alert('Error', 'Location not available');
+      return;
+    }
+
+    setShowProfileModal(false);
+    
     try {
       setLoading(true);
-      const response = await api.post('/rides/notify', { pilotId });
-      
-      if (response.data.success) {
-        // Navigate to pending screen
-        navigation.navigate('RidePending', {
-          rideId: response.data.ride.id,
-          pilotId,
-          pilotName: pilots.find(p => p.id === pilotId)?.name,
+      // Mock destination (will be replaced with location picker)
+      const mockDestination = {
+        lat: userLocation.lat + 0.01,
+        lng: userLocation.lng + 0.01,
+      };
+
+      const response = await api.notifyRide({
+        pilotId: selectedPilot.id,
+        origin: { lat: userLocation.lat, lng: userLocation.lng },
+        destination: mockDestination,
+      });
+
+      if (response.success) {
+        navigation.navigate('NotificationSent', {
+          rideId: response.ride.id,
+          pilotId: selectedPilot.id,
+          pilotName: selectedPilot.name,
         });
       }
     } catch (error: any) {
-      console.error('Error requesting ride:', error);
-      alert(error.response?.data?.error || 'Failed to request ride');
+      console.error('Error notifying pilot:', error);
+      Alert.alert('Error', error.message || 'Failed to notify pilot');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleViewProfile = (pilot: Pilot) => {
-    navigation.navigate('PilotProfile', { pilot });
+  const handleViewFullProfile = () => {
+    if (selectedPilot) {
+      setShowProfileModal(false);
+      navigation.navigate('PilotProfile', { pilot: selectedPilot });
+    }
   };
 
-  if (loading && pilots.length === 0) {
+  if (!userLocation) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#F59E0B" />
-        <Text style={styles.loadingText}>Finding nearby pilots...</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Getting your location...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.userName}>{user?.name || 'Rider'}</Text>
-        </View>
+      {/* Map View */}
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        style={styles.map}
+        initialRegion={{
+          latitude: userLocation.lat,
+          longitude: userLocation.lng,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }}
+        showsUserLocation={true}
+        showsMyLocationButton={false}
+        onMapReady={() => setMapReady(true)}
+      >
+        {/* User Location Marker */}
+        <Marker
+          coordinate={{
+            latitude: userLocation.lat,
+            longitude: userLocation.lng,
+          }}
+          title="Your Location"
+          pinColor={theme.colors.secondary}
+        />
+
+        {/* Pilot Markers */}
+        {pilots.map((pilot, index) => (
+          <Marker
+            key={pilot.id}
+            coordinate={{
+              latitude: pilot.latitude,
+              longitude: pilot.longitude,
+            }}
+            title={pilot.name}
+            description={`${pilot.rating.toFixed(1)} ⭐ • ${pilot.distance}m away`}
+            onPress={() => handlePilotPress(pilot)}
+          >
+            <View style={styles.pilotMarker}>
+              <View style={styles.pilotMarkerInner}>
+                <Text style={styles.pilotMarkerText}>P{index + 1}</Text>
+              </View>
+            </View>
+          </Marker>
+        ))}
+      </MapView>
+
+      {/* Top Bar - Token Balance */}
+      <View style={styles.topBar}>
         <View style={styles.tokenBadge}>
-          <Ionicons name="wallet" size={20} color="#F59E0B" />
+          <Ionicons name="wallet" size={20} color={theme.colors.primary} />
           <Text style={styles.tokenText}>{user?.token_balance || 0}</Text>
         </View>
       </View>
 
-      {/* Location Info */}
-      <View style={styles.locationCard}>
-        <Ionicons name="location" size={20} color="#3B82F6" />
-        <View style={styles.locationText}>
-          <Text style={styles.locationTitle}>Your Location</Text>
-          <Text style={styles.locationCoords}>
-            {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}
-          </Text>
-        </View>
-        <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <Ionicons name="refresh" size={20} color="#64748B" />
-        </TouchableOpacity>
+      {/* Search Bar */}
+      <View style={styles.searchBar}>
+        <Ionicons name="flag" size={20} color={theme.colors.textSecondary} />
+        <Text style={styles.searchPlaceholder}>🏁 Where are you going?</Text>
       </View>
 
-      {/* Pilots List */}
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.pilotsHeader}>
-          <Text style={styles.pilotsTitle}>
-            {pilots.length} Pilot{pilots.length !== 1 ? 's' : ''} Nearby
-          </Text>
-          <Text style={styles.pilotsSubtitle}>Within 5 km</Text>
-        </View>
-
-        {pilots.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="car-outline" size={64} color="#CBD5E1" />
-            <Text style={styles.emptyText}>No pilots nearby</Text>
-            <Text style={styles.emptySubtext}>Try refreshing or check back later</Text>
+      {/* Nearby Pilots Card */}
+      {pilots.length > 0 && (
+        <View style={styles.pilotsCard}>
+          <View style={styles.pilotsCardHeader}>
+            <Text style={styles.pilotsCardTitle}>
+              {pilots.length} Pilot{pilots.length !== 1 ? 's' : ''} Nearby
+            </Text>
+            <TouchableOpacity onPress={onRefresh} disabled={refreshing}>
+              <Ionicons
+                name="refresh"
+                size={20}
+                color={theme.colors.primary}
+                style={{ opacity: refreshing ? 0.5 : 1 }}
+              />
+            </TouchableOpacity>
           </View>
-        ) : (
-          pilots.map((pilot) => (
-            <View key={pilot.id} style={styles.pilotCard}>
-              <View style={styles.pilotHeader}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pilotsList}
+          >
+            {pilots.map((pilot) => (
+              <TouchableOpacity
+                key={pilot.id}
+                style={[
+                  styles.pilotCard,
+                  selectedPilot?.id === pilot.id && styles.pilotCardSelected,
+                ]}
+                onPress={() => handlePilotPress(pilot)}
+              >
+                <View style={styles.pilotCardAvatar}>
+                  <Text style={styles.pilotCardAvatarText}>
                     {pilot.name.charAt(0).toUpperCase()}
                   </Text>
                 </View>
-                <View style={styles.pilotInfo}>
-                  <Text style={styles.pilotName}>{pilot.name}</Text>
-                  <View style={styles.pilotMeta}>
-                    <Ionicons name="star" size={14} color="#FBBF24" />
-                    <Text style={styles.pilotRating}>{pilot.rating?.toFixed(1) || '4.8'}</Text>
-                    <Text style={styles.pilotSeparator}>•</Text>
-                    <Text style={styles.pilotRides}>{pilot.total_rides || 0} rides</Text>
-                    {pilot.distance && (
-                      <>
-                        <Text style={styles.pilotSeparator}>•</Text>
-                        <Text style={styles.pilotDistance}>{pilot.distance.toFixed(1)} km</Text>
-                      </>
-                    )}
-                  </View>
+                <Text style={styles.pilotCardName} numberOfLines={1}>
+                  {pilot.name}
+                </Text>
+                <View style={styles.pilotCardMeta}>
+                  <Ionicons name="star" size={12} color={theme.colors.warning} />
+                  <Text style={styles.pilotCardRating}>{pilot.rating.toFixed(1)}</Text>
                 </View>
-              </View>
-
-              <View style={styles.pilotActions}>
+                <Text style={styles.pilotCardDistance}>
+                  {(pilot.distance / 1000).toFixed(1)} km
+                </Text>
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.viewProfileButton]}
-                  onPress={() => handleViewProfile(pilot)}
+                  style={styles.pilotCardButton}
+                  onPress={() => handlePilotPress(pilot)}
                 >
-                  <Ionicons name="person-outline" size={18} color="#3B82F6" />
-                  <Text style={styles.viewProfileText}>View Profile</Text>
+                  <Ionicons name="person" size={16} color={theme.colors.white} />
                 </TouchableOpacity>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    styles.requestButton,
-                    selectedPilot === pilot.id && styles.requestButtonSelected,
-                  ]}
-                  onPress={() => {
-                    if (selectedPilot === pilot.id) {
-                      handleRequestRide(pilot.id);
-                    } else {
-                      setSelectedPilot(pilot.id);
-                    }
-                  }}
-                >
-                  <Ionicons 
-                    name={selectedPilot === pilot.id ? "checkmark-circle" : "car"} 
-                    size={18} 
-                    color="white" 
-                  />
-                  <Text style={styles.requestButtonText}>
-                    {selectedPilot === pilot.id ? 'Confirm Request' : 'Select'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
+      {/* Empty State */}
+      {!loading && pilots.length === 0 && (
+        <View style={styles.emptyState}>
+          <Ionicons name="car-outline" size={64} color={theme.colors.textTertiary} />
+          <Text style={styles.emptyText}>No pilots nearby</Text>
+          <Text style={styles.emptySubtext}>Try refreshing or check back later</Text>
+        </View>
+      )}
+
+      {/* Loading Overlay */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Finding nearby pilots...</Text>
+        </View>
+      )}
+
+      {/* Pilot Profile Modal */}
+      <PilotProfileModal
+        visible={showProfileModal}
+        pilot={selectedPilot}
+        onClose={() => {
+          setShowProfileModal(false);
+          setSelectedPilot(null);
+        }}
+        onNotify={handleNotifyPilot}
+        onViewFullProfile={handleViewFullProfile}
+      />
     </View>
   );
 }
@@ -211,214 +321,201 @@ export default function MapScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#64748B',
+  map: {
+    width: width,
+    height: height,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  greeting: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0F172A',
-    marginTop: 4,
+  topBar: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 1,
   },
   tokenBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: theme.colors.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
+    ...theme.shadows.md,
   },
   tokenText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#F59E0B',
+    color: theme.colors.primary,
   },
-  locationCard: {
+  searchBar: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 16,
+    backgroundColor: theme.colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 8,
+    ...theme.shadows.md,
+    zIndex: 1,
   },
-  locationText: {
-    flex: 1,
-  },
-  locationTitle: {
-    fontSize: 12,
-    color: '#64748B',
-    marginBottom: 2,
-  },
-  locationCoords: {
+  searchPlaceholder: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A',
+    color: theme.colors.textSecondary,
   },
-  refreshButton: {
-    padding: 8,
+  pilotsCard: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: theme.colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    maxHeight: 200,
+    ...theme.shadows.xl,
   },
-  scrollView: {
-    flex: 1,
-  },
-  pilotsHeader: {
+  pilotsCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 12,
   },
-  pilotsTitle: {
+  pilotsCardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.text,
   },
-  pilotsSubtitle: {
+  pilotsList: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  pilotCard: {
+    width: 120,
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  pilotCardSelected: {
+    backgroundColor: theme.colors.primaryLight + '20',
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  },
+  pilotCardAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  pilotCardAvatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.white,
+  },
+  pilotCardName: {
     fontSize: 12,
-    color: '#64748B',
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  pilotCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  pilotCardRating: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.warning,
+  },
+  pilotCardDistance: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+  },
+  pilotCardButton: {
+    backgroundColor: theme.colors.primary,
+    width: '100%',
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  pilotMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: theme.colors.white,
+    ...theme.shadows.md,
+  },
+  pilotMarkerInner: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pilotMarkerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.white,
   },
   emptyState: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#64748B',
+    color: theme.colors.textSecondary,
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textTertiary,
     marginTop: 8,
   },
-  pilotCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  pilotHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#F59E0B',
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    zIndex: 10,
   },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  pilotInfo: {
-    flex: 1,
-  },
-  pilotName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  pilotMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  pilotRating: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FBBF24',
-  },
-  pilotSeparator: {
-    fontSize: 13,
-    color: '#CBD5E1',
-    marginHorizontal: 4,
-  },
-  pilotRides: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  pilotDistance: {
-    fontSize: 13,
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  pilotActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 6,
-  },
-  viewProfileButton: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  viewProfileText: {
+  loadingText: {
+    marginTop: 12,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-  requestButton: {
-    backgroundColor: '#F59E0B',
-  },
-  requestButtonSelected: {
-    backgroundColor: '#10B981',
-  },
-  requestButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.textSecondary,
   },
 });

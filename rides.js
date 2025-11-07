@@ -9,26 +9,11 @@ const rideController = require('../controllers/rideController');
 // All routes require authentication
 router.use(authMiddleware);
 
-// Create ride request
+// Create ride request (notify pilot)
 router.post('/notify', rideController.createRide);
 
-// Get ride by ID
-router.get('/:id', rideController.getRideById);
-
-// Accept ride (pilot only)
-router.post('/:id/accept', rideController.acceptRide);
-
-// Start ride
-router.patch('/:id/confirm', rideController.startRide);
-router.patch('/:id/start', rideController.startRide);
-
-// End ride
-router.patch('/:id/end', rideController.endRide);
-
-// Get user's rides
+// Get user's rides (must be before /:id route to avoid conflict)
 router.get('/', rideController.getUserRides);
-
-module.exports = router;
 
 // Get ride by ID
 router.get('/:id', rideController.getRideById);
@@ -42,8 +27,5 @@ router.patch('/:id/start', rideController.startRide);
 
 // End ride
 router.patch('/:id/end', rideController.endRide);
-
-// Get user's rides
-router.get('/', rideController.getUserRides);
 
 module.exports = router;

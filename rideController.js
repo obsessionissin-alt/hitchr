@@ -1,15 +1,23 @@
 // backend/src/controllers/rideController.js
 const pool = require('../config/database');
 
-// Create a ride request (SIMPLIFIED FOR DEMO)
+// Create a ride request (notify pilot)
 exports.createRide = async (req, res) => {
   try {
-    const { pilotId } = req.body;
+    const { pilotId, origin, destination } = req.body;
     const riderId = req.user.id;
 
     // Validate inputs
     if (!pilotId) {
       return res.status(400).json({ error: 'Pilot ID is required' });
+    }
+
+    if (!origin || !origin.lat || !origin.lng) {
+      return res.status(400).json({ error: 'Origin location (lat, lng) is required' });
+    }
+
+    if (!destination || !destination.lat || !destination.lng) {
+      return res.status(400).json({ error: 'Destination location (lat, lng) is required' });
     }
 
     // Check if pilot exists and is available
@@ -26,17 +34,73 @@ exports.createRide = async (req, res) => {
       return res.status(400).json({ error: 'User is not a pilot' });
     }
 
-    // Create ride with minimal columns (no origin_lat/lng)
-    const result = await pool.query(
-      `INSERT INTO rides (rider_id, pilot_id, status, created_at, updated_at) 
-       VALUES ($1, $2, $3, NOW(), NOW()) 
+    // Calculate distance (simplified - using haversine)
+    const { calculateDistance } = require('../utils/haversine');
+    const distanceMeters = Math.round(
+      calculateDistance(origin.lat, origin.lng, destination.lat, destination.lng)
+    );
+
+    // Create ride with origin and destination
+    const rideResult = await pool.query(
+      `INSERT INTO rides (
+        rider_id, pilot_id, 
+        origin_lat, origin_lng, 
+        destination_lat, destination_lng,
+        distance_meters,
+        status, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', NOW(), NOW()) 
        RETURNING *`,
-      [riderId, pilotId, 'pending']
+      [
+        riderId, 
+        pilotId, 
+        origin.lat, 
+        origin.lng, 
+        destination.lat, 
+        destination.lng,
+        distanceMeters
+      ]
+    );
+
+    const ride = rideResult.rows[0];
+
+    // Create active notification for proximity matching
+    // Notification expires in 10 minutes
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    await pool.query(
+      `INSERT INTO active_notifications (
+        ride_id, rider_id, pilot_id,
+        rider_location, expires_at,
+        notification_sent, created_at
+      ) VALUES (
+        $1, $2, $3,
+        ST_SetSRID(ST_MakePoint($5, $4), 4326),
+        $6,
+        true, NOW()
+      )`,
+      [
+        ride.id,
+        riderId,
+        pilotId,
+        origin.lat,
+        origin.lng,
+        expiresAt
+      ]
     );
 
     res.status(201).json({
       success: true,
-      ride: result.rows[0]
+      ride: {
+        id: ride.id,
+        rider_id: ride.rider_id,
+        pilot_id: ride.pilot_id,
+        origin: { lat: origin.lat, lng: origin.lng },
+        destination: { lat: destination.lat, lng: destination.lng },
+        distance_meters: distanceMeters,
+        status: ride.status,
+        created_at: ride.created_at
+      }
     });
 
   } catch (error) {
@@ -172,12 +236,12 @@ exports.endRide = async (req, res) => {
       [tokens_earned, ride.rider_id, ride.pilot_id]
     );
 
-    // Insert token transactions
+    // Insert token transactions (using tokens table)
     await pool.query(
-      `INSERT INTO token_transactions (user_id, amount, type, category, source, created_at)
-       VALUES ($1, $2, 'earn', 'ride', 'ride_completion', NOW()),
-              ($3, $4, 'earn', 'ride', 'ride_completion', NOW())`,
-      [ride.rider_id, tokens_earned, ride.pilot_id, tokens_earned]
+      `INSERT INTO tokens (user_id, amount, type, category, source, ride_id, created_at)
+       VALUES ($1, $2, 'earn', 'ride', 'ride_completion', $5, NOW()),
+              ($3, $4, 'earn', 'ride', 'ride_completion', $5, NOW())`,
+      [ride.rider_id, tokens_earned, ride.pilot_id, tokens_earned, id]
     );
 
     res.json({

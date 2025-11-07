@@ -11,6 +11,7 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import AuthScreen from '../screens/AuthScreen';
 import MapScreen from '../screens/MapScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import NotificationSentScreen from '../screens/NotificationSentScreen';
 
 // Optional screens - will show placeholder if not implemented
 const TokenWalletScreen = () => (
@@ -82,7 +83,7 @@ function MainTabs() {
     >
       <Tab.Screen
         name="Map"
-        component={MapScreen}
+        component={MapStack}
         options={{
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="map" size={size} color={color} />
@@ -108,6 +109,17 @@ function MainTabs() {
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+// Map Stack Navigator (for ride flow screens)
+function MapStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MapHome" component={MapScreen} />
+      <Stack.Screen name="NotificationSent" component={NotificationSentScreen} />
+      {/* More screens will be added here */}
+    </Stack.Navigator>
   );
 }
 

@@ -3,7 +3,7 @@ const redis = require('../config/redis');
 
 exports.updateLocation = async (req, res) => {
   try {
-    const pilotId = req.user.userId;
+    const pilotId = req.user.id;
     const { latitude, longitude, heading, speed } = req.body;
 
     if (!latitude || !longitude) {
@@ -13,12 +13,28 @@ exports.updateLocation = async (req, res) => {
       });
     }
 
+    // Check if user is a pilot
+    const userCheck = await pool.query(
+      'SELECT role FROM users WHERE id = $1',
+      [pilotId]
+    );
+
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (userCheck.rows[0].role !== 'pilot') {
+      return res.status(403).json({ success: false, message: 'Only pilots can update location' });
+    }
+
     await pool.query(
-      `INSERT INTO pilot_locations (pilot_id, location, heading, speed, is_available, updated_at)
-       VALUES ($1, ST_SetSRID(ST_MakePoint($3, $2), 4326), $4, $5, true, NOW())
+      `INSERT INTO pilot_locations (pilot_id, location, latitude, longitude, heading, speed, is_available, updated_at)
+       VALUES ($1, ST_SetSRID(ST_MakePoint($3, $2), 4326), $2, $3, $4, $5, true, NOW())
        ON CONFLICT (pilot_id) 
        DO UPDATE SET 
          location = ST_SetSRID(ST_MakePoint($3, $2), 4326),
+         latitude = $2,
+         longitude = $3,
          heading = $4,
          speed = $5,
          is_available = true,
@@ -29,7 +45,7 @@ exports.updateLocation = async (req, res) => {
     res.json({ success: true, message: 'Location updated' });
   } catch (error) {
     console.error('❌ Update location error:', error);
-    res.status(500).json({ success: false, message: 'Error' });
+    res.status(500).json({ success: false, message: 'Error updating location' });
   }
 };
 
@@ -90,7 +106,7 @@ exports.getNearbyPilots = async (req, res) => {
         latitude: parseFloat(p.latitude),
         longitude: parseFloat(p.longitude),
         distance: Math.round(parseFloat(p.distance)),
-        vehicle: { type: 'Car', model: 'Sedan' },
+        vehicle: { type: 'Car', model: 'Sedan' }, // Mock vehicle data
       })),
     });
   } catch (error) {

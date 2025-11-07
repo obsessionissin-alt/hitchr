@@ -173,18 +173,18 @@ class ApiService {
   // Ride endpoints
   async notifyRide(rideData: {
     pilotId: string;
-    origin: { latitude: number; longitude: number };
-    destination: { latitude: number; longitude: number };
+    origin: { lat: number; lng: number };
+    destination: { lat: number; lng: number };
   }) {
     return this.post('/rides/notify', {
       pilotId: rideData.pilotId,
       origin: {
-        lat: rideData.origin.latitude,
-        lng: rideData.origin.longitude,
+        lat: rideData.origin.lat,
+        lng: rideData.origin.lng,
       },
       destination: {
-        lat: rideData.destination.latitude,
-        lng: rideData.destination.longitude,
+        lat: rideData.destination.lat,
+        lng: rideData.destination.lng,
       },
     });
   }

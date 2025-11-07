@@ -1,7 +1,4 @@
 const db = require('../config/database');
-const { client: redis } = require('../config/redis');
-const { calculateDistance } = require('../utils/haversine');
-const { getIO } = require('./socketService');
 
 const PROXIMITY_THRESHOLD = parseInt(process.env.PROXIMITY_THRESHOLD_METERS) || 20;
 const CHECK_INTERVAL = parseInt(process.env.PROXIMITY_CHECK_INTERVAL) || 2000;
@@ -29,20 +26,29 @@ const checkProximity = async () => {
 
     for (const notification of result.rows) {
       try {
-        const pilotLocationData = await redis.get(`pilot_location:${notification.pilot_id}`);
-        
-        if (!pilotLocationData) {
+        // Get pilot location from pilot_locations table instead of Redis
+        const pilotLocationResult = await db.query(
+          `SELECT 
+            ST_Y(location::geometry) as latitude,
+            ST_X(location::geometry) as longitude
+           FROM pilot_locations
+           WHERE pilot_id = $1 AND is_available = true
+           LIMIT 1`,
+          [notification.pilot_id]
+        );
+
+        if (pilotLocationResult.rows.length === 0) {
           console.log(`No location data for pilot ${notification.pilot_id}`);
           continue;
         }
 
-        const pilotLocation = JSON.parse(pilotLocationData);
+        const pilotLocation = pilotLocationResult.rows[0];
         
         const distance = calculateDistance(
           notification.rider_lat,
           notification.rider_lng,
-          pilotLocation.lat,
-          pilotLocation.lng
+          pilotLocation.latitude,
+          pilotLocation.longitude
         );
 
         console.log(`Ride ${notification.ride_id}: Distance ${distance.toFixed(2)}m`);
@@ -65,8 +71,8 @@ const checkProximity = async () => {
             rideId: notification.ride_id,
             distance: Math.round(distance),
             pilotLocation: {
-              lat: pilotLocation.lat,
-              lng: pilotLocation.lng,
+              lat: pilotLocation.latitude,
+              lng: pilotLocation.longitude,
             }
           });
 
@@ -127,9 +133,9 @@ const stopProximityService = () => {
   }
 };
 
-// module.exports = {
-//   startProximityService,
-//   stopProximityService,
-//   checkProximity,
-// };
+module.exports = {
+  startProximityService,
+  stopProximityService,
+  checkProximity,
+};
 
