@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+coverage/
+*.sqlite
+*.db
+.idea/
+.vscode/
+.expo/
+.web-cache/
+hitch-app/.expo/

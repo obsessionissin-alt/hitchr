@@ -1,0 +1,604 @@
+# 🎯 HITCHR Project - Complete Context for AI Assistant
+
+## ⚠️ CRITICAL INSTRUCTION FOR AI
+
+**Do not make any changes until you have 95% confidence that you know what to build. Ask me follow-up questions until you have that confidence.**
+
+Your role:
+1. ✅ Review the existing codebase thoroughly
+2. ✅ Understand the architecture and what's completed
+3. ✅ Think beyond - suggest improvements and optimizations
+4. ✅ Identify potential issues or technical debt
+5. ❌ DO NOT make changes without asking clarifying questions first
+6. ✅ When unsure, ask specific questions about requirements, design decisions, or implementation details
+
+---
+
+## 📊 Project Overview
+
+**Project Name:** HITCHR 
+**Type:** Community Ride-Sharing Mobile App  
+**Tech Stack:** React Native (Expo) + Node.js + PostgreSQL + Redis  
+**Current Phase:** Phase 2 - Core Features (15% complete)  
+**What Works:** ✅ Complete authentication system (Phone OTP → JWT → Login)  
+**What's Next:** 🔄 Building 8 core ride-flow screens and then the remaining screens 
+
+---
+
+## 🏗️ System Architecture
+
+### Backend Stack
+```
+Node.js 18+ + Express
+├── PostgreSQL 14+ (with PostGIS for geospatial)
+├── Redis 6+ (OTP storage, caching)
+├── Socket.io (real-time updates - configured but not used yet)
+├── Firebase Admin (phone auth verification)
+└── JWT (API authentication)
+```
+
+### Frontend Stack
+```
+React Native (Expo SDK 54) + TypeScript
+├── React Navigation 6 (bottom tabs + stack)
+├── AsyncStorage (token persistence)
+├── Axios (API client)
+├── Context API (auth, ride, user state)
+└── React Native Maps (to be integrated)
+```
+
+### Database Schema (Completed)
+```sql
+-- Core tables created via migrations:
+users (id UUID, phone, name, role, token_balance, stats...)
+pilot_locations (pilot_id, location GEOGRAPHY, is_available...)
+rides (id UUID, rider_id, pilot_id, origin, destination, status...)
+active_notifications (id UUID, ride_id, rider_id, pilot_id...)
+tokens (id UUID, user_id, amount, type, category...)
+telemetry (id UUID, ride_id, location tracking data...)
+```
+
+---
+
+## ✅ What's Completed (Phase 1: Foundation)
+
+### Backend (Fully Working)
+
+**File Structure:**
+```
+backend/
+├── src/
+│   ├── config/
+│   │   ├── database.js ✅ PostgreSQL connection
+│   │   ├── redis.js ✅ Redis client
+│   │   └── firebase-admin.js ✅ Firebase Admin SDK
+│   ├── controllers/
+│   │   ├── authController.js ✅ sendOTP, verifyOTP, getMe, refreshToken
+│   │   ├── userController.js ✅ User CRUD
+│   │   ├── pilotController.js ✅ Location update, nearby search
+│   │   ├── rideController.js ✅ Basic ride operations
+│   │   └── tokenController.js ✅ Token operations
+│   ├── routes/
+│   │   ├── auth.js ✅ /auth/send-otp, /auth/verify-otp
+│   │   ├── users.js ✅ /users/me
+│   │   ├── pilots.js ✅ /pilot/location, /pilot/nearby
+│   │   ├── rides.js ✅ /rides/*
+│   │   └── tokens.js ✅ /tokens/*
+│   ├── middleware/
+│   │   ├── authMiddleware.js ✅ JWT verification
+│   │   └── errorHandler.js ✅ Global error handling
+│   ├── services/
+│   │   ├── socketService.js ⚠️ Configured but unused
+│   │   └── proximityService.js ⚠️ DISABLED (has schema issues, and we have to make it work)
+│   └── server.js ✅ Express app, CORS configured
+├── migrations/
+│   └── 1728000000000_initial-schema.js ✅ All tables created
+└── .env ✅ Configured (DATABASE_URL, REDIS_URL, JWT_SECRET)
+```
+
+**Working API Endpoints:**
+```
+POST /api/v1/auth/send-otp         ✅ Sends OTP (always 123456 in dev)
+POST /api/v1/auth/verify-otp       ✅ Verifies OTP, returns JWT + user
+GET  /api/v1/users/me              ✅ Get current user (protected)
+PATCH /api/v1/users/me             ✅ Update profile
+POST /api/v1/pilot/location        ✅ Update pilot location (PostGIS)
+GET  /api/v1/pilot/nearby          ✅ Find nearby pilots (geospatial)
+POST /api/v1/rides/notify          ✅ Create ride request
+GET  /api/v1/rides/:id             ✅ Get ride details
+PATCH /api/v1/rides/:id/start      ✅ Start ride
+PATCH /api/v1/rides/:id/end        ✅ End ride
+```
+
+**Important Notes:**
+- OTP is hardcoded to `123456` in development (see `authController.js`)
+- Proximity service is commented out in `server.js` (has schema mismatch)
+- CORS is configured for `192.168.1.207:*` (backend IP)
+- Redis used for OTP storage (5 min TTL)
+- JWT tokens valid for 7 days
+
+---
+
+### Frontend (Fully Working)
+
+**File Structure:**
+```
+hitch-app/
+├── src/
+│   ├── config/
+│   │   └── firebase.ts ✅ Firebase client config (unused now)
+│   ├── constants/
+│   │   ├── config.ts ✅ API_URL from env
+│   │   └── theme.tsx ✅ Theme constants
+│   ├── store/
+│   │   ├── AuthContext.tsx ✅ Auth state (authStep, tempPhone, user)
+│   │   ├── RideContext.tsx ⚠️ Exists but minimal
+│   │   └── UserContext.tsx ⚠️ Exists but minimal
+│   ├── services/
+│   │   ├── api.ts ✅ Axios client with interceptors
+│   │   ├── auth.ts ⚠️ Old Firebase logic (unused)
+│   │   ├── location.ts ⚠️ Minimal
+│   │   └── socket.ts ⚠️ Configured but unused
+│   ├── navigation/
+│   │   └── AppNavigator.tsx ✅ Bottom tabs (Map/Tokens/Profile)
+│   ├── screens/
+│   │   ├── AuthScreen.tsx ✅ Phone + OTP flow (WORKING)
+│   │   ├── MapScreen.tsx ⚠️ Basic placeholder
+│   │   ├── ProfileScreen.tsx ⚠️ Basic placeholder
+│   │   └── TokenWalletScreen.tsx ⚠️ Placeholder
+│   ├── components/
+│   │   ├── Avatar.tsx ✅
+│   │   ├── Button.tsx ✅
+│   │   ├── Card.tsx ✅
+│   │   └── Input.tsx ✅
+│   └── utils/
+│       ├── haversine.ts ✅ Distance calculation
+│       └── validators.ts ✅ Input validation
+├── App.tsx ✅ Root component
+└── .env ✅ EXPO_PUBLIC_API_URL configured
+```
+
+**What Works:**
+- ✅ Complete auth flow (Phone → OTP → Login)
+- ✅ JWT token storage in AsyncStorage
+- ✅ Protected routes (auth required)
+- ✅ Bottom tab navigation (3 tabs)
+- ✅ User state persistence
+- ✅ API client with auto token injection
+
+**Auth Flow (FULLY WORKING):**
+```
+1. User enters phone (10 digits)
+2. Frontend calls POST /auth/send-otp
+3. Backend stores OTP in Redis, returns success
+4. User enters OTP (123456 in dev)
+5. Frontend calls POST /auth/verify-otp
+6. Backend verifies, creates/finds user, returns JWT
+7. Frontend stores JWT, sets user in context
+8. User navigates to main app (Map/Tokens/Profile tabs)
+```
+
+---
+
+## 🎨 Design System (From Wireframes)
+
+### Color Palette
+```typescript
+primary: '#F59E0B'      // Amber (buttons, markers)
+secondary: '#3B82F6'    // Blue (user marker, links)
+success: '#10B981'      // Green (success states)
+background: '#F8FAFC'   // Light gray
+card: '#FFFFFF'         // White cards
+text: {
+  primary: '#0F172A',   // Almost black
+  secondary: '#64748B', // Gray
+}
+```
+
+### Typography
+```typescript
+fontSize: {
+  xs: 12,
+  sm: 14,
+  base: 16,
+  lg: 18,
+  xl: 24,
+  '2xl': 32,
+}
+```
+
+### Spacing
+```typescript
+padding: 20,
+borderRadius: 15,
+cardShadow: '0 4px 12px rgba(0,0,0,0.08)',
+```
+
+---
+
+## 📱 Target Screens (From Wireframes)
+
+### Screen 1: Home Map (NOT STARTED)
+**Wireframe:** Shows map with pilot pins, nearby list, search bar  
+**Requirements:**
+- Map view (full screen)
+- User location (blue dot, centered)
+- Pilot pins (amber circles with "P1", "P2" labels)
+- "5 Pilots Nearby" card at bottom
+- Horizontal scrollable pilot list (name, distance, rating)
+- Search bar: "🏁 Where are you going?"
+- Token balance in top-right (coin icon + number)
+- Tap pin → Opens Pilot Profile Modal
+
+**API Needed:** `GET /pilot/nearby?lat=X&lng=Y&radius=5000` ✅ Exists
+
+---
+
+### Screen 2: Pilot Profile Modal (NOT STARTED)
+**Wireframe:** Bottom sheet with pilot info  
+**Requirements:**
+- Profile header (avatar initial, name, vehicle, rating)
+- Distance indicator: "0.8 km away • ~2 mins"
+- Stats grid: Rides, Rating, KM, Tokens (4 boxes)
+- Badges row (🏆 Top Pilot, 🌟 5-Star Pro, 🛡️ Safe Driver)
+- "🔔 Notify Pilot" button (primary)
+- "View Full Profile" button (outline)
+
+**API Needed:** User data already available in pilot list response
+
+---
+
+### Screen 3: Notification Sent (NOT STARTED)
+**Wireframe:** Confirmation screen after notifying pilot  
+**Requirements:**
+- Bell icon (large, centered)
+- "Notification Sent!" heading
+- "Rohit has been alerted you're ahead" subtitle
+- Blue notification bubble: "Voice Alert Sent: 'Rider ahead on your route'"
+- Info card: "What happens next?" with 3 steps
+- ETA card: "2 mins" in large text
+- Small map showing pilot location approaching
+- "Cancel Notification" button
+
+**API Needed:** `POST /rides/notify` ✅ Exists
+
+---
+
+### Screen 4: Proximity Confirmation (NOT STARTED)
+**Wireframe:** When pilot is 10-20m away  
+**Requirements:**
+- Large location icon (pulsing, green)
+- "Pilot Nearby!" heading
+- "Rohit is 15 meters away" subtitle
+- Pilot card with avatar, name, stats
+- Green notification: "Both riders must confirm"
+- Trip preview card (destination, estimated tokens)
+- "✓ Confirm Ride" button (large, green)
+- "Decline" button (outline)
+
+**API Needed:** Proximity detection (backend service disabled, needs fix)
+
+---
+
+### Screen 5: Full Profile View (NOT STARTED)
+**Wireframe:** Complete pilot profile  
+**Requirements:**
+- Banner background (gradient)
+- Large avatar (centered, overlapping banner)
+- Name, "Pilot since [date]"
+- Badges row
+- Stats grid (same as modal but larger)
+- Achievements section (cards with icons)
+- Vehicle info card (Type, Plate, Verification)
+- Recent reviews (scrollable list)
+
+**API Needed:** Can use existing `/users/:id` endpoint or add `/pilots/:id/profile`
+
+---
+
+### Screen 6: Your Profile (BASIC VERSION EXISTS)
+**Wireframe:** User's own profile with progress  
+**Requirements:**
+- Banner + avatar (same as Screen 5)
+- "Edit Profile" and "Share" buttons
+- Stats grid (personal stats)
+- "Achievements & Badges" section
+- Progress bars for incomplete achievements (e.g., "87/100 rides")
+- "Collected Plates" grid (shows RTO codes collected)
+- Recent activity list
+
+**API Needed:** `GET /users/me` ✅ Exists, may need to extend with achievements
+
+---
+
+### Screen 7: Ride Live (NOT STARTED)
+**Wireframe:** Active ride tracking  
+**Requirements:**
+- Map view with route (blue line)
+- Car marker (animated on route)
+- Destination marker (red pin)
+- Status banner at top: "In Progress" + ETA
+- Bottom sheet with pilot card
+- Action buttons: 📞 Call, 📍 Share, 🚨 SOS (3 columns)
+
+**API Needed:** 
+- Socket.io for real-time location updates
+- `POST /rides/:id/telemetry` for GPS tracking ✅ Exists
+
+---
+
+### Screen 8: Ride Complete (NOT STARTED)
+**Wireframe:** Trip summary and rewards  
+**Requirements:**
+- Large checkmark icon (green)
+- "Trip Complete!" heading
+- Trip stats: "8.5 km • 24 mins"
+- Token reward card (coin icon, "+15 Tokens Earned", bonus info)
+- "New Plate!" card if applicable (RTO code display)
+- Rating section: 5 stars + quick tags (Safe, Friendly, Punctual)
+- "📝 Share Your Story" button
+- "Done" button
+
+**API Needed:** `PATCH /rides/:id/end` ✅ Exists
+
+---
+
+## 🔧 Known Issues & Technical Debt
+
+### Backend Issues
+1. **Proximity Service Disabled**
+   - Location: `server.js` line ~88 (commented out)
+   - Problem: Schema mismatch - `active_notifications` table missing `rider_location` and `expires_at` columns
+   - Fix needed: Either update migration or fix `proximityService.js` query
+
+2. **Socket.io Configured But Not Used**
+   - Setup exists but no emit/listen logic
+   - Needed for real-time ride tracking (Screen 7)
+
+3. **No Telemetry Processing**
+   - Telemetry endpoint exists but data not used
+   - Needed for anti-cheat and ride validation
+
+### Frontend Issues
+1. **MapScreen is Placeholder**
+   - Just shows text, no actual map
+   - Needs `react-native-maps` or Mapbox integration
+
+2. **ProfileScreen is Basic**
+   - Shows minimal user info
+   - Needs enhancement per wireframe
+
+3. **No Real-time Updates**
+   - Socket.io client configured but not connected
+   - No live location updates
+
+4. **TokenWalletScreen is Empty**
+   - Shows "Coming Soon" only
+   - Needs token transaction history
+
+### Infrastructure Issues
+1. **No Mapbox Token**
+   - Required for production map features
+   - Currently using placeholder
+
+2. **No SMS Provider**
+   - OTP is hardcoded in dev
+   - Need Twilio/similar for production
+
+3. **No Real Pilot Data**
+   - Database has schema but no seed data
+   - Need to create mock pilots for testing
+
+---
+
+## 🎯 Immediate Priorities (In Order)
+
+### Priority 1: Make Screens Functional
+1. **Home Map Screen** - Most critical
+   - Integrate map library
+   - Display user location
+   - Show mock pilot pins
+   - Build pilot list UI
+
+2. **Pilot Profile Modal** - Depends on Home Map
+   - Bottom sheet component
+   - Stats display
+   - Notify button
+
+3. **Notification Flow** - Depends on Profile
+   - Notification sent screen
+   - Status tracking
+   - Backend notification API
+
+### Priority 2: Complete Ride Flow
+4. **Proximity Matching**
+   - Fix backend proximity service
+   - Build confirmation screen
+   - Bilateral confirmation
+
+5. **Ride Live Tracking**
+   - Socket.io integration
+   - Real-time map updates
+   - Driver info card
+
+6. **Ride Complete**
+   - Summary screen
+   - Token rewards
+   - Rating system
+
+### Priority 3: Polish
+7. **Profile Enhancements**
+   - Full profile view
+   - User profile with progress
+   - Edit functionality
+
+8. **Token Wallet**
+   - Transaction history
+   - Balance display
+   - Categories
+
+---
+
+## 📝 Code Quality Standards
+
+### Backend
+- ✅ All API endpoints use proper error handling
+- ✅ Database queries use parameterized statements (SQL injection safe)
+- ✅ JWT tokens validated on protected routes
+- ✅ CORS properly configured
+- ⚠️ Need to add input validation middleware
+- ⚠️ Need to add rate limiting on auth endpoints
+
+### Frontend
+- ✅ TypeScript strict mode enabled
+- ✅ Context API for state management
+- ✅ API client properly configured with interceptors
+- ⚠️ Need consistent error handling across screens
+- ⚠️ Need loading states for all async operations
+- ⚠️ Need offline handling
+
+---
+
+## 🤔 Questions You Should Ask Before Building
+
+### For Home Map Screen:
+1. Should we use react-native-maps (free) or Mapbox (paid, better features)?
+2. How often should pilot locations refresh? (Real-time or periodic?)
+3. What's the max radius for nearby pilots? (Currently 5km)
+4. Should we cluster markers if there are many pilots?
+5. Should the map auto-recenter when user moves?
+
+### For Proximity Matching:
+1. What exactly is the confirmation range? (10-20m as per wireframe?)
+2. What happens if one person confirms but the other doesn't?
+3. How long does the confirmation window last?
+4. Can pilot decline after notification?
+
+### For Real-time Tracking:
+1. How frequently should location updates be sent? (Every 5 seconds?)
+2. Should we show pilot's route or just their marker?
+3. What happens if connection is lost during ride?
+4. Should we cache telemetry locally if offline?
+
+### For Token System:
+1. What's the token calculation formula? (Base 10 + distance bonus?)
+2. When are tokens awarded? (Immediate or after review period?)
+3. Can tokens be negative (penalties)?
+4. What's the conversion rate? (100 tokens = ₹100?)
+
+### For Profiles:
+1. Can users upload custom avatars or just initials?
+2. What badges exist and how are they earned?
+3. Can users edit all profile fields or just some?
+4. Should profile be public or only visible to matched riders?
+
+---
+
+## 🚀 How to Start Contributing
+
+### For Backend Features:
+1. Review `backend/src/controllers/` for existing patterns
+2. Check `backend/src/routes/` for API structure
+3. Look at `authController.js` as reference implementation
+4. Use same error handling pattern
+5. Add to appropriate route file or create new one
+
+### For Frontend Features:
+1. Review `src/screens/AuthScreen.tsx` as reference
+2. Check `src/store/AuthContext.tsx` for state management pattern
+3. Use existing components from `src/components/`
+4. Follow the design system (colors, spacing, typography)
+5. Match wireframe specifications exactly
+
+### For New Screens:
+1. Find wireframe in documentation
+2. Break down into components
+3. Identify API needs
+4. Create screen file in `src/screens/`
+5. Add to navigator in `AppNavigator.tsx`
+6. Implement UI matching wireframe
+7. Connect to APIs
+8. Add error handling and loading states
+9. Test on iOS, Android, and Web
+
+---
+
+## 📚 Additional Context
+
+### Token Economics
+- Base reward: 10 tokens per verified ride
+- Distance bonus: +5 tokens if >10km
+- Streak bonus: +10 tokens after 5 rides in 7 days
+- Subscription multiplier: 1.25x for Premium users
+- Redemption: 100 tokens ≈ ₹100 voucher value
+
+### User Roles
+- **Rider:** Requests rides, earns tokens
+- **Pilot:** Offers rides, earns tokens (more)
+- **Both:** Can switch roles (future feature)
+
+### Safety Features (Not Implemented Yet)
+- KYC verification for pilots
+- Live location sharing with emergency contacts
+- SOS button
+- Trip verification (GPS-based fraud detection)
+- Rating system with trust score
+
+### Gamification (Not Implemented Yet)
+- RTO Plate collection (like Pokemon Go)
+- Leaderboards (regional, global)
+- Achievement badges
+- Streak tracking
+- Quests system
+
+---
+
+## 🎓 Learning Resources
+
+### Technologies Used
+- [React Native Docs](https://reactnative.dev/docs/getting-started)
+- [Expo Docs](https://docs.expo.dev/)
+- [React Navigation](https://reactnavigation.org/)
+- [PostgreSQL PostGIS](https://postgis.net/documentation/)
+- [Socket.io](https://socket.io/docs/v4/)
+
+### Design Patterns
+- [React Context API](https://react.dev/learn/passing-data-deeply-with-context)
+- [JWT Authentication](https://jwt.io/introduction)
+- [REST API Best Practices](https://restfulapi.net/)
+
+---
+
+## ✅ When to Proceed
+
+**You can start building when you understand:**
+- ✅ The authentication flow (how users log in)
+- ✅ The API structure (how frontend talks to backend)
+- ✅ The database schema (what tables exist)
+- ✅ The design system (colors, spacing, components)
+- ✅ The specific screen requirements (from wireframes)
+
+**Ask questions if unclear about:**
+- ❓ Business logic (how features should work)
+- ❓ Design decisions (why things are built a certain way)
+- ❓ Technical choices (library selection, architecture)
+- ❓ Edge cases (error handling, offline mode)
+- ❓ Performance requirements (how fast, how scalable)
+
+---
+
+## 🎯 Your Mission
+
+**Review this entire document, then:**
+1. Ask clarifying questions about anything unclear
+2. Suggest improvements or optimizations you see
+3. Identify potential issues or concerns
+4. Propose a plan for the next feature to build
+5. **ONLY THEN** start writing code
+6. and you have whole allowance to make it better and working 8 screen model. 
+
+Remember: **95% confidence before any changes!**
+
+---
+
+**End of Context Document**
