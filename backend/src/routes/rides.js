@@ -2,32 +2,36 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-
-// Import controller
 const rideController = require('../controllers/rideController');
 
 // All routes require authentication
 router.use(authMiddleware);
 
-// Create ride request (notify pilot)
-router.post('/notify', rideController.createRide);
+// Create notification (Rider → Pilot flow)
+router.post('/notify', rideController.createNotification);
 
-// Get user's rides
-router.get('/', rideController.getUserRides);
+// Create offer (Pilot → Rider flow)
+router.post('/offer', rideController.createOffer);
 
-// Get ride by ID
-router.get('/:id', rideController.getRideById);
-
-// Accept ride (pilot only) - legacy, may not be used with proximity flow
-router.post('/:id/accept', rideController.acceptRide);
-
-// Confirm ride (when proximity match happens - both rider and pilot)
+// Confirm ride (both users must confirm)
 router.patch('/:id/confirm', rideController.confirmRide);
 
-// Start ride (after both confirmed)
+// Start ride (pilot only)
 router.patch('/:id/start', rideController.startRide);
 
 // End ride
 router.patch('/:id/end', rideController.endRide);
+
+// Cancel ride
+router.patch('/:id/cancel', rideController.cancelRide);
+
+// Send telemetry during ride
+router.post('/:id/telemetry', rideController.sendTelemetry);
+
+// Get ride by ID
+router.get('/:id', rideController.getRideById);
+
+// Get ride history
+router.get('/history', rideController.getRideHistory);
 
 module.exports = router;

@@ -1,5 +1,9 @@
+// src/screens/PilotProfileModal.tsx
+// Modern Indian Design - Bold, social pilot profiles
+
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { theme } from '../constants/theme';
 
 interface PilotProfileModalProps {
   pilot: any;
@@ -20,43 +24,62 @@ export default function PilotProfileModal({ pilot, onClose, onNotify, onViewFull
         <View style={styles.handle} />
         
         <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header */}
           <View style={styles.header}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{pilot.avatar}</Text>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{pilot.avatar}</Text>
+              </View>
+              {pilot.verified && (
+                <View style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedIcon}>✓</Text>
+                </View>
+              )}
             </View>
+            
             <View style={styles.headerInfo}>
               <Text style={styles.name}>{pilot.name}</Text>
               <Text style={styles.vehicle}>
                 {pilot.vehicle.type} • {pilot.vehicle.plate}
               </Text>
               <View style={styles.ratingRow}>
-                <Text style={styles.rating}>⭐ {pilot.rating}</Text>
-                <Text style={styles.separator}>|</Text>
-                {pilot.verified && (
-                  <Text style={styles.verified}>✓ Verified</Text>
-                )}
+                <View style={styles.ratingBadge}>
+                  <Text style={styles.ratingText}>⭐ {pilot.rating}</Text>
+                </View>
+                <View style={styles.rideBadge}>
+                  <Text style={styles.rideText}>{pilot.totalRides} rides</Text>
+                </View>
               </View>
             </View>
           </View>
           
-          <View style={styles.proximityIndicator}>
-            <View style={styles.pulseDot} />
-            <Text style={styles.proximityText}>
-              {(pilot.distance / 1000).toFixed(1)} km away • ~{Math.ceil(pilot.distance / 500)} mins
-            </Text>
+          {/* Proximity Indicator */}
+          <View style={styles.proximityCard}>
+            <View style={styles.proximityDot} />
+            <View style={styles.proximityInfo}>
+              <Text style={styles.proximityLabel}>Distance</Text>
+              <Text style={styles.proximityValue}>
+                {(pilot.distance / 1000).toFixed(1)} km away
+              </Text>
+            </View>
+            <View style={styles.proximityEta}>
+              <Text style={styles.etaValue}>~{Math.ceil(pilot.distance / 500)}</Text>
+              <Text style={styles.etaLabel}>min</Text>
+            </View>
           </View>
           
+          {/* Stats Grid */}
           <View style={styles.statsGrid}>
             <View style={styles.statBox}>
               <Text style={styles.statValue}>{pilot.totalRides}</Text>
               <Text style={styles.statLabel}>Rides</Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statValue}>{pilot.rating}</Text>
-              <Text style={styles.statLabel}>Rating</Text>
+            <View style={[styles.statBox, styles.statBoxHighlight]}>
+              <Text style={[styles.statValue, styles.statValueHighlight]}>{pilot.rating}</Text>
+              <Text style={[styles.statLabel, styles.statLabelHighlight]}>Rating</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{(pilot.totalKm / 1000).toFixed(1)}k</Text>
+              <Text style={styles.statValue}>{Math.round(pilot.totalKm)}</Text>
               <Text style={styles.statLabel}>KM</Text>
             </View>
             <View style={styles.statBox}>
@@ -65,9 +88,10 @@ export default function PilotProfileModal({ pilot, onClose, onNotify, onViewFull
             </View>
           </View>
           
+          {/* Badges */}
           {pilot.badges && pilot.badges.length > 0 && (
             <View style={styles.badgesSection}>
-              <Text style={styles.sectionTitle}>Badges</Text>
+              <Text style={styles.sectionTitle}>Achievements</Text>
               <View style={styles.badgesContainer}>
                 {pilot.badges.map((badge: string, index: number) => (
                   <View key={index} style={styles.badge}>
@@ -78,13 +102,18 @@ export default function PilotProfileModal({ pilot, onClose, onNotify, onViewFull
             </View>
           )}
           
-          <TouchableOpacity style={styles.primaryButton} onPress={onNotify}>
-            <Text style={styles.primaryButtonText}>🔔 Notify Pilot</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={onViewFull}>
-            <Text style={styles.secondaryButtonText}>View Full Profile</Text>
-          </TouchableOpacity>
+          {/* Actions */}
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.primaryButton} onPress={onNotify}>
+              <Text style={styles.primaryButtonIcon}>🔔</Text>
+              <Text style={styles.primaryButtonText}>Notify Pilot</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.secondaryButton} onPress={onViewFull}>
+              <Text style={styles.secondaryButtonText}>View Full Profile</Text>
+              <Text style={styles.secondaryButtonIcon}>→</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
     </View>
@@ -98,138 +127,219 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.overlay,
   },
   modal: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    padding: 25,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borderRadius.xxl,
+    borderTopRightRadius: theme.borderRadius.xxl,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+    maxHeight: '85%',
+    borderWidth: 2,
+    borderBottomWidth: 0,
+    borderColor: theme.colors.borderStrong,
   },
   handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#CBD5E1',
-    borderRadius: 2,
+    width: 48,
+    height: 5,
+    backgroundColor: theme.colors.border,
+    borderRadius: 3,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
+  
+  // Header
   header: {
     flexDirection: 'row',
-    marginBottom: 20,
-    paddingBottom: 15,
+    marginBottom: theme.spacing.lg,
+    paddingBottom: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: theme.colors.border,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: theme.spacing.md,
   },
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#F59E0B',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 3,
+    borderColor: theme.colors.borderStrong,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
   },
   avatarText: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.accent,
+    borderWidth: 2,
+    borderColor: theme.colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifiedIcon: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.textInverse,
   },
   headerInfo: {
     flex: 1,
     justifyContent: 'center',
   },
   name: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
     marginBottom: 4,
   },
   vehicle: {
     fontSize: 14,
-    color: '#64748B',
-    marginBottom: 6,
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  rating: {
-    fontSize: 14,
-    color: '#FBBF24',
-    fontWeight: '600',
-  },
-  separator: {
-    fontSize: 14,
-    color: '#CBD5E1',
-    marginHorizontal: 8,
-  },
-  verified: {
-    fontSize: 13,
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  proximityIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginBottom: 20,
     gap: 8,
   },
-  pulseDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#10B981',
+  ratingBadge: {
+    backgroundColor: `${theme.colors.warning}20`,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.md,
   },
-  proximityText: {
-    fontSize: 14,
+  ratingText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.warning,
+  },
+  rideBadge: {
+    backgroundColor: theme.colors.surfaceSecondary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.md,
+  },
+  rideText: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#10B981',
+    color: theme.colors.textSecondary,
   },
+  
+  // Proximity
+  proximityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${theme.colors.accent}15`,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.xl,
+    borderWidth: 1,
+    borderColor: `${theme.colors.accent}30`,
+    marginBottom: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  proximityDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: theme.colors.accent,
+  },
+  proximityInfo: {
+    flex: 1,
+  },
+  proximityLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  proximityValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.accent,
+    marginTop: 2,
+  },
+  proximityEta: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: theme.borderRadius.lg,
+  },
+  etaValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: theme.colors.textInverse,
+  },
+  etaLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: theme.colors.textInverse,
+    textTransform: 'uppercase',
+  },
+  
+  // Stats
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: theme.spacing.lg,
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: theme.colors.surfaceSecondary,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border,
+  },
+  statBoxHighlight: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.borderStrong,
+    borderWidth: 2,
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#F59E0B',
-    marginBottom: 4,
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    marginBottom: 2,
+  },
+  statValueHighlight: {
+    color: theme.colors.textOnPrimary,
   },
   statLabel: {
-    fontSize: 11,
-    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.textTertiary,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
+  statLabelHighlight: {
+    color: theme.colors.textOnPrimary,
+    opacity: 0.8,
+  },
+  
+  // Badges
   badgesSection: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 10,
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing.sm,
   },
   badgesContainer: {
     flexDirection: 'row',
@@ -237,39 +347,63 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: `${theme.colors.primary}20`,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}30`,
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#F59E0B',
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
+  
+  // Actions
+  actions: {
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.sm,
   },
   primaryButton: {
-    backgroundColor: '#F59E0B',
-    paddingVertical: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center',
+    backgroundColor: theme.colors.secondary,
+    paddingVertical: 16,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    gap: 10,
+    ...theme.shadows.magenta,
+  },
+  primaryButtonIcon: {
+    fontSize: 18,
   },
   primaryButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: theme.colors.textInverse,
   },
   secondaryButton: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+    paddingVertical: 16,
+    borderRadius: theme.borderRadius.lg,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.border,
+    gap: 8,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0F172A',
+    color: theme.colors.textPrimary,
+  },
+  secondaryButtonIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
   },
 });

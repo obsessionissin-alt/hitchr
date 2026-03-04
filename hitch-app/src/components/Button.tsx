@@ -1,3 +1,6 @@
+// src/components/Button.tsx
+// Modern Indian Design - Bold, Tactile, Authentic
+
 import React from 'react';
 import {
   TouchableOpacity,
@@ -6,15 +9,20 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  View,
 } from 'react-native';
 import { theme } from '../constants/theme';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'text';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'accent';
+  size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   loading?: boolean;
+  icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
+  fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
 }
@@ -23,50 +31,39 @@ export default function Button({
   title,
   onPress,
   variant = 'primary',
+  size = 'md',
   disabled = false,
   loading = false,
+  icon,
+  iconPosition = 'left',
+  fullWidth = true,
   style,
   textStyle,
 }: ButtonProps) {
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       ...styles.button,
+      ...sizeStyles[size].button,
       ...(disabled && styles.disabled),
+      ...(fullWidth && styles.fullWidth),
     };
 
-    switch (variant) {
-      case 'primary':
-        return { ...baseStyle, ...styles.primary };
-      case 'secondary':
-        return { ...baseStyle, ...styles.secondary };
-      case 'outline':
-        return { ...baseStyle, ...styles.outline };
-      case 'danger':
-        return { ...baseStyle, ...styles.danger };
-      case 'text':
-        return { ...baseStyle, ...styles.text };
-      default:
-        return baseStyle;
-    }
+    return { ...baseStyle, ...variantStyles[variant].button };
   };
 
   const getTextStyle = (): TextStyle => {
-    const baseStyle: TextStyle = styles.buttonText;
+    return {
+      ...styles.buttonText,
+      ...sizeStyles[size].text,
+      ...variantStyles[variant].text,
+    };
+  };
 
-    switch (variant) {
-      case 'primary':
-        return { ...baseStyle, ...styles.primaryText };
-      case 'secondary':
-        return { ...baseStyle, ...styles.secondaryText };
-      case 'outline':
-        return { ...baseStyle, ...styles.outlineText };
-      case 'danger':
-        return { ...baseStyle, ...styles.dangerText };
-      case 'text':
-        return { ...baseStyle, ...styles.textText };
-      default:
-        return baseStyle;
-    }
+  const getLoaderColor = () => {
+    if (variant === 'primary') return theme.colors.textOnPrimary;
+    if (variant === 'outline' || variant === 'ghost') return theme.colors.primary;
+    if (variant === 'accent') return theme.colors.textInverse;
+    return theme.colors.textInverse;
   };
 
   return (
@@ -74,67 +71,157 @@ export default function Button({
       style={[getButtonStyle(), style]}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.7}
+      activeOpacity={0.85}
     >
       {loading ? (
-        <ActivityIndicator
-          color={variant === 'outline' || variant === 'text' ? theme.colors.primary : theme.colors.white}
-        />
+        <ActivityIndicator color={getLoaderColor()} size="small" />
       ) : (
-        <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+        <View style={styles.content}>
+          {icon && iconPosition === 'left' && (
+            <View style={styles.iconLeft}>{icon}</View>
+          )}
+          <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+          {icon && iconPosition === 'right' && (
+            <View style={styles.iconRight}>{icon}</View>
+          )}
+        </View>
       )}
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: theme.borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-  },
+// Variant styles - the "spicy" variations
+const variantStyles = {
   primary: {
-    backgroundColor: theme.colors.primary,
+    button: {
+      backgroundColor: theme.colors.primary,
+      borderWidth: 2,
+      borderColor: theme.colors.black,
+      ...theme.shadows.glow,
+    } as ViewStyle,
+    text: {
+      color: theme.colors.textOnPrimary,
+      fontWeight: theme.fontWeight.bold,
+    } as TextStyle,
   },
   secondary: {
-    backgroundColor: theme.colors.secondary,
+    button: {
+      backgroundColor: theme.colors.secondary,
+      borderWidth: 2,
+      borderColor: theme.colors.black,
+      ...theme.shadows.magenta,
+    } as ViewStyle,
+    text: {
+      color: theme.colors.textInverse,
+      fontWeight: theme.fontWeight.bold,
+    } as TextStyle,
+  },
+  accent: {
+    button: {
+      backgroundColor: theme.colors.accent,
+      borderWidth: 2,
+      borderColor: theme.colors.black,
+    } as ViewStyle,
+    text: {
+      color: theme.colors.textInverse,
+      fontWeight: theme.fontWeight.bold,
+    } as TextStyle,
   },
   outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
+    button: {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderColor: theme.colors.black,
+    } as ViewStyle,
+    text: {
+      color: theme.colors.textPrimary,
+      fontWeight: theme.fontWeight.semibold,
+    } as TextStyle,
+  },
+  ghost: {
+    button: {
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+    } as ViewStyle,
+    text: {
+      color: theme.colors.primary,
+      fontWeight: theme.fontWeight.semibold,
+    } as TextStyle,
   },
   danger: {
-    backgroundColor: theme.colors.error,
+    button: {
+      backgroundColor: theme.colors.danger,
+      borderWidth: 2,
+      borderColor: theme.colors.black,
+    } as ViewStyle,
+    text: {
+      color: theme.colors.textInverse,
+      fontWeight: theme.fontWeight.bold,
+    } as TextStyle,
   },
-  text: {
-    backgroundColor: 'transparent',
-    minHeight: 0,
-    paddingVertical: 8,
+};
+
+// Size variations
+const sizeStyles = {
+  sm: {
+    button: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: theme.borderRadius.md,
+      minHeight: 40,
+    } as ViewStyle,
+    text: {
+      fontSize: theme.fontSize.sm,
+    } as TextStyle,
+  },
+  md: {
+    button: {
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      borderRadius: theme.borderRadius.lg,
+      minHeight: 52,
+    } as ViewStyle,
+    text: {
+      fontSize: theme.fontSize.base,
+    } as TextStyle,
+  },
+  lg: {
+    button: {
+      paddingVertical: 18,
+      paddingHorizontal: 32,
+      borderRadius: theme.borderRadius.xl,
+      minHeight: 60,
+    } as ViewStyle,
+    text: {
+      fontSize: theme.fontSize.lg,
+    } as TextStyle,
+  },
+};
+
+const styles = StyleSheet.create({
+  button: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  fullWidth: {
+    width: '100%',
   },
   disabled: {
     opacity: 0.5,
   },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonText: {
-    fontSize: theme.fontSize.base,
-    fontWeight: '600' as any,
+    textAlign: 'center',
   },
-  primaryText: {
-    color: theme.colors.white,
+  iconLeft: {
+    marginRight: 8,
   },
-  secondaryText: {
-    color: theme.colors.white,
-  },
-  outlineText: {
-    color: theme.colors.primary,
-  },
-  dangerText: {
-    color: theme.colors.white,
-  },
-  textText: {
-    color: theme.colors.primary,
+  iconRight: {
+    marginLeft: 8,
   },
 });

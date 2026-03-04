@@ -1,105 +1,400 @@
 // backend/src/controllers/rideController.js
 const pool = require('../config/database');
+const { calculateDistance } = require('../utils/haversine');
+const socketService = require('../services/socketService');
 
-// Create a ride request (notification sent to pilot)
-exports.createRide = async (req, res) => {
+// Create notification (Rider → Pilot flow)
+exports.createNotification = async (req, res) => {
   try {
-    const { pilotId, originLat, originLng, destinationLat, destinationLng, destinationAddress } = req.body;
-    const riderId = req.user.id;
+    const { pilotId, origin, destination } = req.body;
+    const riderId = req.user.userId;
 
     // Validate inputs
-    if (!pilotId) {
-      return res.status(400).json({ error: 'Pilot ID is required' });
+    if (!pilotId || !origin || !destination) {
+      return res.status(400).json({ error: 'pilotId, origin, and destination are required' });
     }
 
-    if (!originLat || !originLng) {
-      return res.status(400).json({ error: 'Origin location (lat/lng) is required' });
-    }
-
-    if (!destinationLat || !destinationLng) {
-      return res.status(400).json({ error: 'Destination location (lat/lng) is required' });
-    }
-
-    // Check if pilot exists and is available
+    // Check if pilot is available
     const pilotCheck = await pool.query(
-      'SELECT id, is_available, role FROM users WHERE id = $1',
+      'SELECT id, is_pilot_available, kyc_status FROM users WHERE id = $1',
       [pilotId]
     );
 
-    if (pilotCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Pilot not found' });
+    if (pilotCheck.rows.length === 0 || !pilotCheck.rows[0].is_pilot_available) {
+      return res.status(400).json({ error: 'Pilot not available' });
     }
 
-    if (pilotCheck.rows[0].role !== 'pilot' && pilotCheck.rows[0].role !== 'both') {
-      return res.status(400).json({ error: 'User is not a pilot' });
-    }
+    // Calculate distance
+    const distanceMeters = calculateDistance(origin.lat, origin.lng, destination.lat, destination.lng);
 
-    // Calculate distance (simplified, can use PostGIS later)
-    const { calculateDistance } = require('../utils/haversine');
-    const distanceMeters = calculateDistance(
-      parseFloat(originLat),
-      parseFloat(originLng),
-      parseFloat(destinationLat),
-      parseFloat(destinationLng)
-    );
-
-    // Create ride with location data
+    // Create ride
     const rideResult = await pool.query(
       `INSERT INTO rides (
         rider_id, pilot_id, 
-        origin_lat, origin_lng,
-        destination_lat, destination_lng, destination_address,
-        distance_meters, status, created_at, updated_at
+        origin, origin_lat, origin_lng,
+        destination, destination_lat, destination_lng,
+        distance_meters, status, initiated_by,
+        created_at, updated_at
       ) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) 
-       RETURNING *`,
-      [
-        riderId, 
-        pilotId,
-        parseFloat(originLat),
-        parseFloat(originLng),
-        parseFloat(destinationLat),
-        parseFloat(destinationLng),
-        destinationAddress || null,
-        Math.round(distanceMeters),
-        'notified' // Status: notified (waiting for proximity match)
-      ]
+      VALUES ($1, $2, 
+        ST_SetSRID(ST_MakePoint($4, $3), 4326)::geography, $3, $4,
+        ST_SetSRID(ST_MakePoint($6, $5), 4326)::geography, $5, $6,
+        $7, 'notified', 'rider', NOW(), NOW()
+      ) 
+      RETURNING *`,
+      [riderId, pilotId, origin.lat, origin.lng, destination.lat, destination.lng, Math.round(distanceMeters)]
     );
 
     const ride = rideResult.rows[0];
 
-    // Create active notification entry for proximity matching
-    // Expires in 10 minutes
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+    // Create active notification
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await pool.query(
       `INSERT INTO active_notifications (
-        ride_id, rider_id, pilot_id,
-        rider_location, expires_at,
-        notification_sent, created_at
+        ride_id, initiator_id, recipient_id,
+        initiator_location, notification_type, status, expires_at
       )
-      VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($5, $4), 4326), $6, true, NOW())
-      RETURNING id`,
-      [
-        ride.id,
-        riderId,
-        pilotId,
-        parseFloat(originLat),
-        parseFloat(originLng),
-        expiresAt
-      ]
+      VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($5, $4), 4326)::geography, 'notify_pilot', 'pending', $6)`,
+      [ride.id, riderId, pilotId, origin.lat, origin.lng, expiresAt]
     );
 
-    res.status(201).json({
-      success: true,
-      ride: ride,
-      message: 'Notification sent to pilot'
+    // Emit socket event to pilot
+    const riderData = await pool.query('SELECT name, avatar_url, rating FROM users WHERE id = $1', [riderId]);
+    socketService.emitToUser(pilotId, 'ride:notification', {
+      rideId: ride.id,
+      rider: riderData.rows[0],
+      origin,
+      destination,
+      distance: distanceMeters,
     });
 
+    res.status(201).json(ride);
   } catch (error) {
-    console.error('Create ride error:', error);
-    res.status(500).json({ error: 'Failed to create ride', details: error.message });
+    console.error('Create notification error:', error);
+    res.status(500).json({ error: 'Failed to create notification', details: error.message });
+  }
+};
+
+// Create offer (Pilot → Rider flow)
+exports.createOffer = async (req, res) => {
+  try {
+    const { riderId, origin, destination } = req.body;
+    const pilotId = req.user.userId;
+
+    // Validate inputs
+    if (!riderId || !origin || !destination) {
+      return res.status(400).json({ error: 'riderId, origin, and destination are required' });
+    }
+
+    // Check if rider is available
+    const riderCheck = await pool.query(
+      'SELECT id, is_rider_available FROM users WHERE id = $1',
+      [riderId]
+    );
+
+    if (riderCheck.rows.length === 0 || !riderCheck.rows[0].is_rider_available) {
+      return res.status(400).json({ error: 'Rider not available' });
+    }
+
+    // Verify pilot is available and KYC verified
+    const pilotCheck = await pool.query(
+      'SELECT kyc_status, is_pilot_available FROM users WHERE id = $1',
+      [pilotId]
+    );
+
+    if (!pilotCheck.rows[0].is_pilot_available || pilotCheck.rows[0].kyc_status !== 'verified') {
+      return res.status(403).json({ error: 'Pilot must be available and KYC verified' });
+    }
+
+    // Calculate distance
+    const distanceMeters = calculateDistance(origin.lat, origin.lng, destination.lat, destination.lng);
+
+    // Create ride
+    const rideResult = await pool.query(
+      `INSERT INTO rides (
+        rider_id, pilot_id, 
+        origin, origin_lat, origin_lng,
+        destination, destination_lat, destination_lng,
+        distance_meters, status, initiated_by,
+        created_at, updated_at
+      ) 
+      VALUES ($1, $2, 
+        ST_SetSRID(ST_MakePoint($4, $3), 4326)::geography, $3, $4,
+        ST_SetSRID(ST_MakePoint($6, $5), 4326)::geography, $5, $6,
+        $7, 'offered', 'pilot', NOW(), NOW()
+      ) 
+      RETURNING *`,
+      [riderId, pilotId, origin.lat, origin.lng, destination.lat, destination.lng, Math.round(distanceMeters)]
+    );
+
+    const ride = rideResult.rows[0];
+
+    // Create active notification
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await pool.query(
+      `INSERT INTO active_notifications (
+        ride_id, initiator_id, recipient_id,
+        initiator_location, notification_type, status, expires_at
+      )
+      VALUES ($1, $2, $3, ST_SetSRID(ST_MakePoint($5, $4), 4326)::geography, 'offer_ride', 'pending', $6)`,
+      [ride.id, pilotId, riderId, origin.lat, origin.lng, expiresAt]
+    );
+
+    // Emit socket event to rider
+    const pilotData = await pool.query(
+      'SELECT name, avatar_url, rating, pilot_vehicle_type, pilot_plate_number FROM users WHERE id = $1',
+      [pilotId]
+    );
+    socketService.emitToUser(riderId, 'ride:offer-received', {
+      rideId: ride.id,
+      pilot: pilotData.rows[0],
+      origin,
+      destination,
+      distance: distanceMeters,
+    });
+
+    res.status(201).json(ride);
+  } catch (error) {
+    console.error('Create offer error:', error);
+    res.status(500).json({ error: 'Failed to create offer', details: error.message });
+  }
+};
+
+// Confirm ride (both users must confirm)
+exports.confirmRide = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    // Get ride details
+    const rideCheck = await pool.query(
+      'SELECT * FROM rides WHERE id = $1 AND (rider_id = $2 OR pilot_id = $2) AND status IN (\'pending_confirm\', \'notified\', \'offered\')',
+      [id, userId]
+    );
+
+    if (rideCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Ride not found or cannot be confirmed' });
+    }
+
+    const ride = rideCheck.rows[0];
+    const isRider = ride.rider_id === userId;
+    const confirmField = isRider ? 'rider_confirmed_at' : 'pilot_confirmed_at';
+
+    // Update confirmation timestamp
+    await pool.query(
+      `UPDATE rides SET ${confirmField} = NOW(), updated_at = NOW() WHERE id = $1`,
+      [id]
+    );
+
+    // Check if both confirmed
+    const updatedRide = await pool.query(
+      'SELECT * FROM rides WHERE id = $1',
+      [id]
+    );
+
+    const rideData = updatedRide.rows[0];
+    const bothConfirmed = rideData.rider_confirmed_at && rideData.pilot_confirmed_at;
+
+    if (bothConfirmed) {
+      // Update status to confirmed
+      await pool.query(
+        `UPDATE rides SET status = 'confirmed', updated_at = NOW() WHERE id = $1`,
+        [id]
+      );
+
+      // Update active_notifications
+      await pool.query(
+        `UPDATE active_notifications SET status = 'proximity_detected' WHERE ride_id = $1`,
+        [id]
+      );
+
+      // Emit to both users
+      socketService.emitToUsers([ride.rider_id, ride.pilot_id], 'ride:both-confirmed', {
+        rideId: id,
+        status: 'confirmed',
+      });
+
+      res.json({ confirmed: true, waitingForOther: false, status: 'confirmed' });
+    } else {
+      res.json({ confirmed: true, waitingForOther: true, status: 'pending_confirm' });
+    }
+  } catch (error) {
+    console.error('Confirm ride error:', error);
+    res.status(500).json({ error: 'Failed to confirm ride' });
+  }
+};
+
+// Start ride (pilot only)
+exports.startRide = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pilotId = req.user.userId;
+
+    const result = await pool.query(
+      `UPDATE rides 
+       SET status = 'active', started_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND pilot_id = $2 AND status = 'confirmed'
+       RETURNING *`,
+      [id, pilotId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Ride not found or cannot be started' });
+    }
+
+    const ride = result.rows[0];
+
+    // Emit to both users
+    socketService.emitToUsers([ride.rider_id, ride.pilot_id], 'ride:started', {
+      rideId: id,
+      startedAt: ride.started_at,
+    });
+
+    res.json(ride);
+  } catch (error) {
+    console.error('Start ride error:', error);
+    res.status(500).json({ error: 'Failed to start ride' });
+  }
+};
+
+// End ride
+exports.endRide = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { endLocation } = req.body;
+    const userId = req.user.userId;
+
+    // Get ride details
+    const rideCheck = await pool.query(
+      'SELECT * FROM rides WHERE id = $1 AND (rider_id = $2 OR pilot_id = $2) AND status = \'active\'',
+      [id, userId]
+    );
+
+    if (rideCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Ride not found or not active' });
+    }
+
+    const ride = rideCheck.rows[0];
+
+    // Calculate final distance
+    const finalDistance = calculateDistance(
+      ride.origin_lat,
+      ride.origin_lng,
+      endLocation.lat,
+      endLocation.lng
+    );
+
+    // Calculate tokens
+    const { calculateRideTokens } = require('../services/tokenService');
+    const { riderTokens, pilotTokens, bonuses } = await calculateRideTokens(
+      ride.rider_id,
+      ride.pilot_id,
+      Math.round(finalDistance)
+    );
+
+    // Update ride
+    await pool.query(
+      `UPDATE rides 
+       SET status = 'completed', ended_at = NOW(), distance_meters = $1,
+           tokens_awarded_to_rider = $2, tokens_awarded_to_pilot = $3, updated_at = NOW()
+       WHERE id = $4`,
+      [Math.round(finalDistance), riderTokens, pilotTokens, id]
+    );
+
+    // Award tokens
+    await pool.query(
+      `INSERT INTO tokens (user_id, amount, type, category, source, ride_id, created_at)
+       VALUES 
+         ($1, $2, 'earn', 'ride', 'Ride completed', $3, NOW()),
+         ($4, $5, 'earn', 'ride', 'Ride completed', $3, NOW())`,
+      [ride.rider_id, riderTokens, id, ride.pilot_id, pilotTokens]
+    );
+
+    // Update user balances and stats
+    await pool.query(
+      `UPDATE users 
+       SET token_balance = token_balance + $1,
+           total_rides_as_rider = total_rides_as_rider + 1,
+           total_km = total_km + $2,
+           last_ride_date = CURRENT_DATE
+       WHERE id = $3`,
+      [riderTokens, finalDistance / 1000, ride.rider_id]
+    );
+
+    await pool.query(
+      `UPDATE users 
+       SET token_balance = token_balance + $1,
+           total_rides_as_pilot = total_rides_as_pilot + 1,
+           total_km = total_km + $2,
+           last_ride_date = CURRENT_DATE
+       WHERE id = $3`,
+      [pilotTokens, finalDistance / 1000, ride.pilot_id]
+    );
+
+    // Check for RTO plate collection (mock implementation)
+    // In production, this would use actual RTO code detection
+
+    // Emit completion event
+    socketService.emitToUsers([ride.rider_id, ride.pilot_id], 'ride:completed', {
+      rideId: id,
+      distance: Math.round(finalDistance),
+      tokensAwarded: {
+        rider: riderTokens,
+        pilot: pilotTokens,
+      },
+    });
+
+    res.json({
+      success: true,
+      tokensAwarded: {
+        rider: riderTokens,
+        pilot: pilotTokens,
+      },
+      distance: Math.round(finalDistance),
+      bonuses,
+    });
+  } catch (error) {
+    console.error('End ride error:', error);
+    res.status(500).json({ error: 'Failed to end ride', details: error.message });
+  }
+};
+
+// Cancel ride
+exports.cancelRide = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const result = await pool.query(
+      `UPDATE rides 
+       SET status = 'cancelled', updated_at = NOW()
+       WHERE id = $1 AND (rider_id = $2 OR pilot_id = $2) AND status NOT IN ('completed', 'cancelled')
+       RETURNING *`,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Ride not found or cannot be cancelled' });
+    }
+
+    const ride = result.rows[0];
+
+    // Clean up active notifications
+    await pool.query('DELETE FROM active_notifications WHERE ride_id = $1', [id]);
+
+    // Emit cancellation to other user
+    const otherUserId = ride.rider_id === userId ? ride.pilot_id : ride.rider_id;
+    socketService.emitToUser(otherUserId, 'ride:cancelled', {
+      rideId: id,
+      cancelledBy: userId,
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Cancel ride error:', error);
+    res.status(500).json({ error: 'Failed to cancel ride' });
   }
 };
 
@@ -107,15 +402,15 @@ exports.createRide = async (req, res) => {
 exports.getRideById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     const result = await pool.query(
       `SELECT r.*, 
-              ru.name as rider_name, ru.phone as rider_phone,
-              pu.name as pilot_name, pu.phone as pilot_phone
+              row_to_json(rider.*) as rider,
+              row_to_json(pilot.*) as pilot
        FROM rides r
-       LEFT JOIN users ru ON r.rider_id = ru.id
-       LEFT JOIN users pu ON r.pilot_id = pu.id
+       LEFT JOIN users rider ON r.rider_id = rider.id
+       LEFT JOIN users pilot ON r.pilot_id = pilot.id
        WHERE r.id = $1 AND (r.rider_id = $2 OR r.pilot_id = $2)`,
       [id, userId]
     );
@@ -131,216 +426,75 @@ exports.getRideById = async (req, res) => {
   }
 };
 
-// Accept ride (pilot only)
-exports.acceptRide = async (req, res) => {
+// Get ride history
+exports.getRideHistory = async (req, res) => {
   try {
-    const { id } = req.params;
-    const pilotId = req.user.id;
+    const userId = req.user.userId;
+    const { limit = 20, offset = 0, role } = req.query;
 
-    // Verify pilot owns this ride
-    const rideCheck = await pool.query(
-      'SELECT * FROM rides WHERE id = $1 AND pilot_id = $2 AND status = $3',
-      [id, pilotId, 'pending']
-    );
-
-    if (rideCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Ride not found or already accepted' });
-    }
-
-    // Update ride status
-    const result = await pool.query(
-      `UPDATE rides SET status = $1, updated_at = NOW() 
-       WHERE id = $2 RETURNING *`,
-      ['accepted', id]
-    );
-
-    res.json({
-      success: true,
-      ride: result.rows[0]
-    });
-
-  } catch (error) {
-    console.error('Accept ride error:', error);
-    res.status(500).json({ error: 'Failed to accept ride' });
-  }
-};
-
-// Confirm ride (when proximity match happens - both rider and pilot confirm)
-exports.confirmRide = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-    const isRider = req.body.isRider !== undefined ? req.body.isRider : null;
-
-    // Get ride details
-    const rideCheck = await pool.query(
-      'SELECT * FROM rides WHERE id = $1 AND (rider_id = $2 OR pilot_id = $2) AND status = $3',
-      [id, userId, 'pending']
-    );
-
-    if (rideCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Ride not found or not in pending status' });
-    }
-
-    const ride = rideCheck.rows[0];
-    const isUserRider = ride.rider_id === userId;
-
-    // Update confirmation status
-    if (isUserRider) {
-      await pool.query(
-        `UPDATE rides SET rider_confirmed = true, updated_at = NOW() WHERE id = $1`,
-        [id]
-      );
+    let whereClause = '';
+    if (role === 'rider') {
+      whereClause = 'WHERE r.rider_id = $1';
+    } else if (role === 'pilot') {
+      whereClause = 'WHERE r.pilot_id = $1';
     } else {
-      await pool.query(
-        `UPDATE rides SET pilot_confirmed = true, updated_at = NOW() WHERE id = $1`,
-        [id]
-      );
-    }
-
-    // Check if both confirmed
-    const updatedRide = await pool.query(
-      'SELECT * FROM rides WHERE id = $1',
-      [id]
-    );
-
-    const bothConfirmed = updatedRide.rows[0].rider_confirmed && updatedRide.rows[0].pilot_confirmed;
-
-    if (bothConfirmed) {
-      await pool.query(
-        `UPDATE rides SET status = 'confirmed', updated_at = NOW() WHERE id = $1`,
-        [id]
-      );
-
-      // Clean up active notification after both confirmed
-      await pool.query(
-        `DELETE FROM active_notifications WHERE ride_id = $1`,
-        [id]
-      );
-    }
-
-    res.json({
-      success: true,
-      ride: updatedRide.rows[0],
-      bothConfirmed,
-      message: bothConfirmed ? 'Ride confirmed! Ready to start.' : 'Confirmation received, waiting for other party'
-    });
-
-  } catch (error) {
-    console.error('Confirm ride error:', error);
-    res.status(500).json({ error: 'Failed to confirm ride' });
-  }
-};
-
-// Start ride (after both confirmed proximity match)
-exports.startRide = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    // Verify user is part of this ride and status is 'confirmed'
-    const rideCheck = await pool.query(
-      'SELECT * FROM rides WHERE id = $1 AND (rider_id = $2 OR pilot_id = $2) AND status = $3',
-      [id, userId, 'confirmed']
-    );
-
-    if (rideCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Ride not found or not ready to start' });
+      whereClause = 'WHERE (r.rider_id = $1 OR r.pilot_id = $1)';
     }
 
     const result = await pool.query(
-      `UPDATE rides SET status = $1, started_at = NOW(), updated_at = NOW() 
-       WHERE id = $2 RETURNING *`,
-      ['active', id]
+      `SELECT r.*, 
+              row_to_json(rider.*) as rider,
+              row_to_json(pilot.*) as pilot
+       FROM rides r
+       LEFT JOIN users rider ON r.rider_id = rider.id
+       LEFT JOIN users pilot ON r.pilot_id = pilot.id
+       ${whereClause}
+       ORDER BY r.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
     );
 
-    res.json({
-      success: true,
-      ride: result.rows[0]
-    });
-
+    res.json(result.rows);
   } catch (error) {
-    console.error('Start ride error:', error);
-    res.status(500).json({ error: 'Failed to start ride' });
+    console.error('Get ride history error:', error);
+    res.status(500).json({ error: 'Failed to get ride history' });
   }
 };
 
-// End ride
-exports.endRide = async (req, res) => {
+// Send telemetry
+exports.sendTelemetry = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    const { rating, tokens_earned = 10 } = req.body;
+    const { points } = req.body;
+    const userId = req.user.userId;
+
+    if (!Array.isArray(points) || points.length === 0) {
+      return res.status(400).json({ error: 'Points array is required' });
+    }
 
     // Verify user is part of this ride
     const rideCheck = await pool.query(
-      'SELECT * FROM rides WHERE id = $1 AND (rider_id = $2 OR pilot_id = $2) AND status = $3',
-      [id, userId, 'active']
+      'SELECT * FROM rides WHERE id = $1 AND (rider_id = $2 OR pilot_id = $2) AND status = \'active\'',
+      [id, userId]
     );
 
     if (rideCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Ride not found or not active' });
     }
 
-    const ride = rideCheck.rows[0];
+    // Insert telemetry points
+    const values = points
+      .map((p, i) => `($1, $2, ${p.lat}, ${p.lng}, ${p.speed || 0}, ${p.heading || 0}, ${p.accuracy || 0}, '${p.timestamp}', NOW())`)
+      .join(',');
 
-    // Update ride status and set ended_at
     await pool.query(
-      `UPDATE rides SET status = $1, ended_at = NOW(), updated_at = NOW() 
-       WHERE id = $2`,
-      ['completed', id]
+      `INSERT INTO telemetry (ride_id, user_id, latitude, longitude, speed, heading, accuracy, recorded_at, received_at)
+       VALUES ${values.replace(/\$1/g, `'${id}'`).replace(/\$2/g, `'${userId}'`)}`
     );
 
-    // Award tokens to both rider and pilot (simplified)
-    await pool.query(
-      'UPDATE users SET token_balance = token_balance + $1, total_rides = total_rides + 1 WHERE id = $2 OR id = $3',
-      [tokens_earned, ride.rider_id, ride.pilot_id]
-    );
-
-    // Insert token transactions (using tokens table, not token_transactions)
-    await pool.query(
-      `INSERT INTO tokens (user_id, amount, type, category, source, ride_id, created_at)
-       VALUES ($1, $2, 'earn', 'ride', 'ride_completion', $5, NOW()),
-              ($3, $4, 'earn', 'ride', 'ride_completion', $5, NOW())`,
-      [ride.rider_id, tokens_earned, ride.pilot_id, tokens_earned, ride.id]
-    );
-
-    res.json({
-      success: true,
-      tokens_earned,
-      message: 'Ride completed successfully'
-    });
-
+    res.json({ success: true, pointsReceived: points.length });
   } catch (error) {
-    console.error('End ride error:', error);
-    res.status(500).json({ error: 'Failed to end ride' });
+    console.error('Send telemetry error:', error);
+    res.status(500).json({ error: 'Failed to send telemetry' });
   }
 };
-
-// Get user's rides
-exports.getUserRides = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const result = await pool.query(
-      `SELECT r.*, 
-              ru.name as rider_name,
-              pu.name as pilot_name
-       FROM rides r
-       LEFT JOIN users ru ON r.rider_id = ru.id
-       LEFT JOIN users pu ON r.pilot_id = pu.id
-       WHERE r.rider_id = $1 OR r.pilot_id = $1
-       ORDER BY r.created_at DESC
-       LIMIT 20`,
-      [userId]
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Get user rides error:', error);
-    res.status(500).json({ error: 'Failed to get rides' });
-  }
-};
-
-// Log all exported functions for debugging
-console.log('✅ RideController exports:', Object.keys(exports));

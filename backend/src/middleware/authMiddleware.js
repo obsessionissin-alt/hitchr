@@ -22,13 +22,24 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
+    // Dev-mode bypass for mock tokens
+    if (token.startsWith('dev_mock_token_')) {
+      req.user = {
+        userId: token,
+        id: token,
+        role: 'dev',
+      };
+      return next();
+    }
+
     // Verify JWT token
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Attach user info to request
       req.user = {
-        id: decoded.id,
+        userId: decoded.userId || decoded.id,
+        id: decoded.id || decoded.userId,
         phone: decoded.phone,
         role: decoded.role,
       };

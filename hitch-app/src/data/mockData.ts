@@ -1,4 +1,12 @@
-// Mock data for testing all features
+// src/data/mockData.ts
+// Mock data for testing non-nearby features (badges, achievements, user profile)
+// 
+// NOTE: Mock pilots and riders for the map are now handled by:
+// - Backend: /backend/src/data/mockUsers.json
+// - Frontend: /src/data/nearbyUsersMock.ts
+// - Hook: useNearbyUsers() with withMocks=true
+//
+// Do NOT add mock pilots/riders to this file - use the unified pipeline instead.
 
 export const mockBadges = [
   { id: '1', icon: '🏆', name: 'Top Pilot', description: 'Top 10 in region' },
@@ -73,147 +81,6 @@ export const mockReviews = [
   },
 ];
 
-export const mockPilots = [
-  {
-    id: '1',
-    name: 'Rohit Kumar',
-    phone: '+919876543210',
-    avatar: 'R',
-    rating: 4.9,
-    totalRides: 342,
-    totalKm: 2100,
-    tokens: 580,
-    latitude: 12.9716,
-    longitude: 77.5946,
-    distance: 800,
-    vehicle: {
-      type: 'Sedan',
-      model: 'Honda City',
-      plate: 'KA-01-AB-1234',
-    },
-    badges: ['Top Pilot', '5-Star Pro', 'Safe Driver', 'Plate Collector'],
-    verified: true,
-    achievements: [
-      { icon: '🏆', title: 'Top 10 Pilot', subtitle: 'Bangalore Region' },
-      { icon: '🗺️', title: 'Plate Collector', subtitle: '28 unique plates' },
-    ],
-    reviews: mockReviews,
-  },
-  {
-    id: '2',
-    name: 'Priya Sharma',
-    phone: '+919876543211',
-    avatar: 'P',
-    rating: 4.8,
-    totalRides: 256,
-    totalKm: 1500,
-    tokens: 420,
-    latitude: 12.9616,
-    longitude: 77.6046,
-    distance: 1200,
-    vehicle: {
-      type: 'Hatchback',
-      model: 'Maruti Swift',
-      plate: 'KA-02-CD-5678',
-    },
-    badges: ['5-Star Pro', 'Safe Driver'],
-    verified: true,
-    achievements: [
-      { icon: '🌟', title: '5-Star Pro', subtitle: '200+ rides with 5-star' },
-      { icon: '🛡️', title: 'Safe Driver', subtitle: 'Perfect safety record' },
-    ],
-    reviews: [
-      { id: '1', name: 'Karthik', rating: 5, comment: 'Very safe and friendly!' },
-      { id: '2', name: 'Divya', rating: 4, comment: 'Great ride!' },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Amit Singh',
-    phone: '+919876543212',
-    avatar: 'A',
-    rating: 4.7,
-    totalRides: 189,
-    totalKm: 1100,
-    tokens: 320,
-    latitude: 12.9816,
-    longitude: 77.5846,
-    distance: 1500,
-    vehicle: {
-      type: 'Bike',
-      model: 'Royal Enfield',
-      plate: 'KA-03-EF-9012',
-    },
-    badges: ['Trusted Pilot'],
-    verified: true,
-    achievements: [
-      { icon: '🎖️', title: 'Trusted Pilot', subtitle: 'High trust score' },
-      { icon: '🏍️', title: 'Bike Expert', subtitle: 'Specialized in bikes' },
-    ],
-    reviews: [
-      { id: '1', name: 'Lakshmi', rating: 5, comment: 'Love the bike rides!' },
-      { id: '2', name: 'Suresh', rating: 4, comment: 'Good pilot!' },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Sneha Patel',
-    phone: '+919876543213',
-    avatar: 'S',
-    rating: 4.9,
-    totalRides: 412,
-    totalKm: 2800,
-    tokens: 650,
-    latitude: 12.9516,
-    longitude: 77.6146,
-    distance: 2100,
-    vehicle: {
-      type: 'SUV',
-      model: 'Hyundai Creta',
-      plate: 'KA-04-GH-3456',
-    },
-    badges: ['Top Pilot', '5-Star Pro', 'Safe Driver'],
-    verified: true,
-    achievements: [
-      { icon: '🏆', title: 'Top Pilot', subtitle: 'Top 5% in region' },
-      { icon: '🌟', title: '5-Star Master', subtitle: '400+ 5-star rides' },
-      { icon: '🛡️', title: 'Safety Champion', subtitle: 'Zero incidents' },
-    ],
-    reviews: [
-      { id: '1', name: 'Arun', rating: 5, comment: 'Best pilot ever!' },
-      { id: '2', name: 'Pooja', rating: 5, comment: 'Highly recommend!' },
-    ],
-  },
-  {
-    id: '5',
-    name: 'Vikram Reddy',
-    phone: '+919876543214',
-    avatar: 'V',
-    rating: 4.6,
-    totalRides: 145,
-    totalKm: 890,
-    tokens: 280,
-    latitude: 12.9416,
-    longitude: 77.5746,
-    distance: 2500,
-    vehicle: {
-      type: 'Sedan',
-      model: 'Toyota Etios',
-      plate: 'KA-05-IJ-7890',
-    },
-    badges: ['Trusted Pilot'],
-    verified: true,
-    achievements: [
-      { icon: '🎖️', title: 'Veteran', subtitle: 'Early adopter' },
-      { icon: '🚗', title: 'Sedan Specialist', subtitle: 'Comfortable rides' },
-    ],
-    reviews: [
-      { id: '1', name: 'Deepa', rating: 5, comment: 'Very comfortable ride!' },
-      { id: '2', name: 'Ravi', rating: 4, comment: 'Good pilot!' },
-    ],
-  },
-];
-
 export const mockCurrentUser = {
   id: 'user123',
   name: 'Alice Sharma',
@@ -253,3 +120,56 @@ export const mockRideHistory = [
   },
 ];
 
+// ============================================================
+// DEPRECATED: Mock pilots/riders
+// These are kept for backward compatibility with legacy components
+// but should NOT be used for new features.
+// Use useNearbyUsers() hook instead!
+// ============================================================
+
+/**
+ * @deprecated Use useNearbyUsers() hook instead
+ * This is kept only for backward compatibility with RideContext
+ */
+export const mockPilots = [
+  {
+    id: 'mock-pilot-1',
+    name: 'Rohit Kumar',
+    phone: '+919876543210',
+    avatar: 'R',
+    rating: 4.9,
+    totalRides: 342,
+    totalKm: 2100,
+    tokens: 580,
+    latitude: 30.3165,
+    longitude: 78.0322,
+    distance: 800,
+    vehicle: {
+      type: 'Sedan',
+      model: 'Honda City',
+      plate: 'UK-07-AB-1234',
+    },
+    badges: ['Top Pilot', '5-Star Pro', 'Safe Driver', 'Plate Collector'],
+    verified: true,
+  },
+  {
+    id: 'mock-pilot-2',
+    name: 'Priya Sharma',
+    phone: '+919876543211',
+    avatar: 'P',
+    rating: 4.8,
+    totalRides: 256,
+    totalKm: 1500,
+    tokens: 420,
+    latitude: 30.3265,
+    longitude: 78.0422,
+    distance: 1200,
+    vehicle: {
+      type: 'Hatchback',
+      model: 'Maruti Swift',
+      plate: 'UK-07-CD-5678',
+    },
+    badges: ['5-Star Pro', 'Safe Driver'],
+    verified: true,
+  },
+];

@@ -1,3 +1,6 @@
+// src/screens/RoleSelectScreen.tsx
+// Modern Indian Design - Bold visual cards for role selection
+
 import React, { useState } from 'react';
 import {
   View,
@@ -6,8 +9,11 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { theme } from '../constants/theme';
 
 const API_URL = 'http://localhost:3000/api/v1';
 
@@ -30,7 +36,6 @@ export default function RoleSelectScreen({ onRoleSelected }: RoleSelectScreenPro
     try {
       const token = await AsyncStorage.getItem('@auth_token');
       
-      // Update user role in backend
       const response = await fetch(`${API_URL}/users/role`, {
         method: 'PUT',
         headers: {
@@ -55,14 +60,19 @@ export default function RoleSelectScreen({ onRoleSelected }: RoleSelectScreenPro
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.logo}>🚗</Text>
-          <Text style={styles.title}>Choose Your Role</Text>
+          <View style={styles.logoSmall}>
+            <Text style={styles.logoText}>H</Text>
+          </View>
+          <Text style={styles.title}>How will you travel?</Text>
           <Text style={styles.subtitle}>
-            Select how you want to use HITCH
+            Choose your journey style
           </Text>
         </View>
 
@@ -72,224 +82,354 @@ export default function RoleSelectScreen({ onRoleSelected }: RoleSelectScreenPro
           <TouchableOpacity
             style={[
               styles.roleCard,
+              styles.riderCard,
               selectedRole === 'rider' && styles.roleCardSelected,
             ]}
             onPress={() => setSelectedRole('rider')}
             disabled={loading}
+            activeOpacity={0.9}
           >
-            <View style={styles.roleIcon}>
-              <Text style={styles.roleIconText}>🙋‍♂️</Text>
-            </View>
-            <Text style={styles.roleTitle}>Rider</Text>
-            <Text style={styles.roleDescription}>
-              Get rides from verified pilots on your route
-            </Text>
-            <View style={styles.roleFeatures}>
-              <Text style={styles.roleFeature}>✓ Free rides</Text>
-              <Text style={styles.roleFeature}>✓ Earn tokens</Text>
-              <Text style={styles.roleFeature}>✓ Collect plates</Text>
-              <Text style={styles.roleFeature}>✓ Build reputation</Text>
-            </View>
             {selectedRole === 'rider' && (
-              <View style={styles.selectedBadge}>
-                <Text style={styles.selectedBadgeText}>✓ Selected</Text>
+              <View style={styles.selectedIndicator}>
+                <Text style={styles.selectedText}>✓</Text>
               </View>
             )}
+            
+            <View style={styles.roleIconContainer}>
+              <Text style={styles.roleEmoji}>🎒</Text>
+            </View>
+            
+            <Text style={styles.roleTitle}>Rider</Text>
+            <Text style={styles.roleTagline}>Catch a ride</Text>
+            
+            <View style={styles.featureList}>
+              <View style={styles.featureItem}>
+                <Text style={styles.featureBullet}>→</Text>
+                <Text style={styles.featureText}>Get lifts from verified pilots</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Text style={styles.featureBullet}>→</Text>
+                <Text style={styles.featureText}>Earn tokens for every ride</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Text style={styles.featureBullet}>→</Text>
+                <Text style={styles.featureText}>Build your traveler profile</Text>
+              </View>
+            </View>
+
+            <View style={styles.roleFooter}>
+              <Text style={styles.roleFooterText}>Perfect for explorers</Text>
+            </View>
           </TouchableOpacity>
 
           {/* Pilot Card */}
           <TouchableOpacity
             style={[
               styles.roleCard,
+              styles.pilotCard,
               selectedRole === 'pilot' && styles.roleCardSelected,
             ]}
             onPress={() => setSelectedRole('pilot')}
             disabled={loading}
+            activeOpacity={0.9}
           >
-            <View style={[styles.roleIcon, styles.roleIconPilot]}>
-              <Text style={styles.roleIconText}>👨‍✈️</Text>
-            </View>
-            <Text style={styles.roleTitle}>Pilot</Text>
-            <Text style={styles.roleDescription}>
-              Offer rides to people on your route
-            </Text>
-            <View style={styles.roleFeatures}>
-              <Text style={styles.roleFeature}>✓ Help community</Text>
-              <Text style={styles.roleFeature}>✓ Earn rewards</Text>
-              <Text style={styles.roleFeature}>✓ Build network</Text>
-              <Text style={styles.roleFeature}>✓ Get verified</Text>
-            </View>
             {selectedRole === 'pilot' && (
-              <View style={styles.selectedBadge}>
-                <Text style={styles.selectedBadgeText}>✓ Selected</Text>
+              <View style={[styles.selectedIndicator, styles.selectedIndicatorDark]}>
+                <Text style={styles.selectedTextDark}>✓</Text>
               </View>
             )}
+            
+            <View style={[styles.roleIconContainer, styles.roleIconDark]}>
+              <Text style={styles.roleEmoji}>🛺</Text>
+            </View>
+            
+            <Text style={[styles.roleTitle, styles.roleTitleDark]}>Pilot</Text>
+            <Text style={[styles.roleTagline, styles.roleTaglineDark]}>Give a ride</Text>
+            
+            <View style={styles.featureList}>
+              <View style={styles.featureItem}>
+                <Text style={[styles.featureBullet, styles.featureBulletDark]}>→</Text>
+                <Text style={[styles.featureText, styles.featureTextDark]}>Share your commute</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Text style={[styles.featureBullet, styles.featureBulletDark]}>→</Text>
+                <Text style={[styles.featureText, styles.featureTextDark]}>Earn rewards & tokens</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Text style={[styles.featureBullet, styles.featureBulletDark]}>→</Text>
+                <Text style={[styles.featureText, styles.featureTextDark]}>Build your network</Text>
+              </View>
+            </View>
+
+            <View style={[styles.roleFooter, styles.roleFooterDark]}>
+              <Text style={[styles.roleFooterText, styles.roleFooterTextDark]}>
+                For those with wheels
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
-        {/* Note */}
+        {/* Note for Pilots */}
         {selectedRole === 'pilot' && (
           <View style={styles.noteCard}>
-            <Text style={styles.noteIcon}>ℹ️</Text>
-            <Text style={styles.noteText}>
-              Pilot verification required. You'll complete KYC after this step.
-            </Text>
+            <Text style={styles.noteIcon}>📋</Text>
+            <View style={styles.noteContent}>
+              <Text style={styles.noteTitle}>Verification required</Text>
+              <Text style={styles.noteText}>
+                Pilots complete a quick KYC to ensure safety for everyone
+              </Text>
+            </View>
           </View>
         )}
 
         {/* Continue Button */}
-        <TouchableOpacity
-          style={[styles.continueButton, !selectedRole && styles.continueButtonDisabled]}
-          onPress={handleRoleSelection}
-          disabled={!selectedRole || loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.continueButtonText}>
-              Continue as {selectedRole === 'rider' ? 'Rider' : selectedRole === 'pilot' ? 'Pilot' : '...'}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.continueButton,
+              !selectedRole && styles.continueButtonDisabled,
+            ]}
+            onPress={handleRoleSelection}
+            disabled={!selectedRole || loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color={theme.colors.textOnPrimary} />
+            ) : (
+              <Text style={styles.continueButtonText}>
+                {selectedRole 
+                  ? `Continue as ${selectedRole === 'rider' ? 'Rider' : 'Pilot'}`
+                  : 'Select a role'
+                }
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <Text style={styles.switchNote}>
+            You can switch roles anytime from settings
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
   },
-  content: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
+  scrollContent: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    paddingTop: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
   },
-  logo: {
-    fontSize: 64,
-    marginBottom: 16,
+  logoSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: theme.colors.textOnPrimary,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 8,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#64748B',
-    textAlign: 'center',
+    fontSize: 15,
+    color: theme.colors.textSecondary,
   },
   roleCards: {
-    gap: 20,
-    marginBottom: 24,
+    gap: theme.spacing.md,
   },
   roleCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: theme.borderRadius.xxl,
+    padding: theme.spacing.lg,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  riderCard: {
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+  },
+  pilotCard: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.borderStrong,
+    ...theme.shadows.glow,
   },
   roleCardSelected: {
-    borderColor: '#F59E0B',
-    backgroundColor: '#FEF3C7',
+    borderColor: theme.colors.secondary,
+    borderWidth: 3,
   },
-  roleIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+  selectedIndicator: {
+    position: 'absolute',
+    top: theme.spacing.md,
+    right: theme.spacing.md,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  roleIconPilot: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+  selectedIndicatorDark: {
+    backgroundColor: theme.colors.surfaceDark,
   },
-  roleIconText: {
+  selectedText: {
+    color: theme.colors.textInverse,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  selectedTextDark: {
+    color: theme.colors.primary,
+  },
+  roleIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: theme.borderRadius.xl,
+    backgroundColor: theme.colors.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  roleIconDark: {
+    backgroundColor: 'rgba(27, 27, 27, 0.2)',
+  },
+  roleEmoji: {
     fontSize: 32,
   },
   roleTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 8,
+    fontSize: 26,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    marginBottom: 2,
   },
-  roleDescription: {
+  roleTitleDark: {
+    color: theme.colors.textOnPrimary,
+  },
+  roleTagline: {
     fontSize: 14,
-    color: '#64748B',
-    marginBottom: 16,
-    lineHeight: 20,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+    fontWeight: '500',
   },
-  roleFeatures: {
-    gap: 6,
+  roleTaglineDark: {
+    color: 'rgba(27, 27, 27, 0.7)',
   },
-  roleFeature: {
-    fontSize: 13,
-    color: '#0F172A',
+  featureList: {
+    gap: 8,
+    marginBottom: theme.spacing.md,
   },
-  selectedBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  selectedBadgeText: {
-    color: '#FFFFFF',
+  featureBullet: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.secondary,
+  },
+  featureBulletDark: {
+    color: theme.colors.textOnPrimary,
+  },
+  featureText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    flex: 1,
+  },
+  featureTextDark: {
+    color: 'rgba(27, 27, 27, 0.8)',
+  },
+  roleFooter: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+  },
+  roleFooterDark: {
+    borderTopColor: 'rgba(27, 27, 27, 0.2)',
+  },
+  roleFooterText: {
     fontSize: 12,
+    color: theme.colors.textTertiary,
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  roleFooterTextDark: {
+    color: 'rgba(27, 27, 27, 0.6)',
   },
   noteCard: {
     flexDirection: 'row',
-    backgroundColor: '#DBEAFE',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    gap: 12,
+    backgroundColor: `${theme.colors.info}15`,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+    gap: theme.spacing.md,
+    alignItems: 'flex-start',
   },
   noteIcon: {
-    fontSize: 20,
+    fontSize: 24,
+  },
+  noteContent: {
+    flex: 1,
+  },
+  noteTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.info,
+    marginBottom: 2,
   },
   noteText: {
-    flex: 1,
     fontSize: 13,
-    color: '#1E40AF',
+    color: theme.colors.textSecondary,
     lineHeight: 18,
   },
+  footer: {
+    marginTop: theme.spacing.xl,
+  },
   continueButton: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 12,
-    paddingVertical: 16,
+    height: 56,
+    backgroundColor: theme.colors.secondary,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    ...theme.shadows.magenta,
   },
   continueButtonDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: theme.colors.textTertiary,
     shadowOpacity: 0,
     elevation: 0,
   },
   continueButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: theme.colors.textInverse,
+  },
+  switchNote: {
+    fontSize: 12,
+    color: theme.colors.textTertiary,
+    textAlign: 'center',
+    marginTop: theme.spacing.md,
   },
 });
-

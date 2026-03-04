@@ -17,6 +17,8 @@ const userRoutes = require('./routes/users');
 const pilotRoutes = require('./routes/pilots');
 const rideRoutes = require('./routes/rides');
 const tokenRoutes = require('./routes/tokens');
+const nearbyRoutes = require('./routes/nearby');
+const locationRoutes = require('./routes/location');
 
 const app = express();
 const server = http.createServer(app);
@@ -25,10 +27,14 @@ const server = http.createServer(app);
 app.use(cors({
   origin: [
     'http://localhost:8081',
+    'http://localhost:8082',   // Added for web on port 8082
     'http://localhost:19006',
     'http://localhost:19000',
     'http://192.168.1.31:8081',
     'http://192.168.1.31:19006',
+    'http://192.168.1.52:8081',   // Mobile IP
+    'http://192.168.1.52:19006',  // Mobile IP
+    'http://192.168.1.52:19000',  // Mobile IP
     'http://192.168.1.100:8081',   // Old IP (keep for compatibility)
     'http://192.168.1.100:19006',
     'http://192.168.1.100:19000',
@@ -52,7 +58,12 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-app.use(generalLimiter);
+// Relax rate limiting in non-production to allow dense dev polling (location + nearby)
+if (process.env.RATE_LIMIT_DISABLED !== 'true') {
+  app.use(generalLimiter);
+} else {
+  console.warn('⚠️  Rate limiting disabled via RATE_LIMIT_DISABLED=true');
+}
 
 app.get('/health', async (req, res) => {
   try {
@@ -75,7 +86,8 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 app.use(`/api/${API_VERSION}/auth`, authRoutes);
 app.use(`/api/${API_VERSION}/users`, userRoutes);
 app.use(`/api/${API_VERSION}/pilot`, pilotRoutes);
-app.use(`/api/${API_VERSION}/nearby/pilots`, pilotRoutes);
+app.use(`/api/${API_VERSION}/location`, locationRoutes);
+app.use(`/api/${API_VERSION}/nearby`, nearbyRoutes);
 app.use(`/api/${API_VERSION}/rides`, rideRoutes);
 app.use(`/api/${API_VERSION}/tokens`, tokenRoutes);
 

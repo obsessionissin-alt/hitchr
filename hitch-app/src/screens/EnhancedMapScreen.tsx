@@ -1,3 +1,6 @@
+// src/screens/EnhancedMapScreen.tsx
+// Modern Indian Design - Bold, social, adventure-focused
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -9,13 +12,15 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
-  Platform,
+  TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ExpoLocation from 'expo-location';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSimpleAuth } from '../store/SimpleAuthContext';
 import { mockPilots } from '../data/mockData';
 import PilotProfileModal from './PilotProfileModal';
+import { theme } from '../constants/theme';
 
 const API_URL = 'http://localhost:3000/api/v1';
 
@@ -31,6 +36,7 @@ interface Pilot {
   latitude: number;
   longitude: number;
   distance: number;
+  destination?: string;
   vehicle: {
     type: string;
     model: string;
@@ -52,6 +58,8 @@ export default function EnhancedMapScreen({ navigation }: any) {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationPermission, setLocationPermission] = useState(false);
   const [locationName, setLocationName] = useState<string>('Getting location...');
+  const [destination, setDestination] = useState<string>('');
+  const [showDestinationInput, setShowDestinationInput] = useState(false);
 
   useEffect(() => {
     initializeLocation();
@@ -64,7 +72,6 @@ export default function EnhancedMapScreen({ navigation }: any) {
       );
       const data = await response.json();
       
-      // Extract readable location
       const city = data.address?.city || data.address?.town || data.address?.village;
       const state = data.address?.state;
       const country = data.address?.country;
@@ -82,7 +89,6 @@ export default function EnhancedMapScreen({ navigation }: any) {
         locationStr = 'Your Location';
       }
       
-      console.log('📍 Location name:', locationStr);
       setLocationName(locationStr);
     } catch (error) {
       console.error('Failed to get location name:', error);
@@ -92,13 +98,11 @@ export default function EnhancedMapScreen({ navigation }: any) {
 
   const initializeLocation = async () => {
     try {
-      console.log('🌍 Requesting location permission...');
       const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
       const hasPermission = status === 'granted';
       setLocationPermission(hasPermission);
       
       if (hasPermission) {
-        console.log('✅ Location permission granted, getting current position...');
         const location = await ExpoLocation.getCurrentPositionAsync({
           accuracy: ExpoLocation.Accuracy.High,
         });
@@ -108,26 +112,16 @@ export default function EnhancedMapScreen({ navigation }: any) {
           lng: location.coords.longitude,
         };
         
-        console.log('📍 User location:', userLoc);
         setUserLocation(userLoc);
         getLocationName(userLoc.lat, userLoc.lng);
         fetchPilots(userLoc.lat, userLoc.lng);
       } else {
-        console.log('❌ Location permission denied, using default location');
-        // Fallback to Bangalore
         const defaultLoc = { lat: 12.9716, lng: 77.5946 };
         setUserLocation(defaultLoc);
         setLocationName('Bangalore, Karnataka');
         fetchPilots(defaultLoc.lat, defaultLoc.lng);
-        Alert.alert(
-          'Location Permission',
-          'Please enable location to see pilots near you.',
-          [{ text: 'OK' }]
-        );
       }
     } catch (error) {
-      console.error('❌ Location error:', error);
-      // Fallback to default
       const defaultLoc = { lat: 12.9716, lng: 77.5946 };
       setUserLocation(defaultLoc);
       setLocationName('Bangalore, Karnataka');
@@ -141,8 +135,6 @@ export default function EnhancedMapScreen({ navigation }: any) {
       const userLat = lat || userLocation?.lat || 12.9716;
       const userLng = lng || userLocation?.lng || 77.5946;
       
-      console.log('🔍 Fetching pilots near:', userLat, userLng);
-      
       const response = await fetch(
         `${API_URL}/pilots/nearby?lat=${userLat}&lng=${userLng}&radius=10000`,
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -150,59 +142,33 @@ export default function EnhancedMapScreen({ navigation }: any) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Got pilots from API:', data.pilots?.length || 0);
         
         if (data.pilots && data.pilots.length > 0) {
-          // Calculate real distances
           const pilotsWithDistance = data.pilots.map((pilot: any) => ({
             ...pilot,
-            distance: calculateDistance(
-              userLat,
-              userLng,
-              pilot.latitude,
-              pilot.longitude
-            ),
+            distance: calculateDistance(userLat, userLng, pilot.latitude, pilot.longitude),
           }));
           setPilots(pilotsWithDistance);
         } else {
-          console.log('⚠️ No pilots from API, using mock data with real distances');
-          // Use mock data but calculate real distances
           const pilotsWithRealDistance = mockPilots.map(pilot => ({
             ...pilot,
-            distance: calculateDistance(
-              userLat,
-              userLng,
-              pilot.latitude,
-              pilot.longitude
-            ),
+            distance: calculateDistance(userLat, userLng, pilot.latitude, pilot.longitude),
           }));
           setPilots(pilotsWithRealDistance);
         }
       } else {
-        console.log('⚠️ API error, using mock data');
         const pilotsWithRealDistance = mockPilots.map(pilot => ({
           ...pilot,
-          distance: calculateDistance(
-            userLat,
-            userLng,
-            pilot.latitude,
-            pilot.longitude
-          ),
+          distance: calculateDistance(userLat, userLng, pilot.latitude, pilot.longitude),
         }));
         setPilots(pilotsWithRealDistance);
       }
     } catch (error) {
-      console.log('❌ Error fetching pilots, using mock data:', error);
       const userLat = lat || userLocation?.lat || 12.9716;
       const userLng = lng || userLocation?.lng || 77.5946;
       const pilotsWithRealDistance = mockPilots.map(pilot => ({
         ...pilot,
-        distance: calculateDistance(
-          userLat,
-          userLng,
-          pilot.latitude,
-          pilot.longitude
-        ),
+        distance: calculateDistance(userLat, userLng, pilot.latitude, pilot.longitude),
       }));
       setPilots(pilotsWithRealDistance);
     } finally {
@@ -211,20 +177,18 @@ export default function EnhancedMapScreen({ navigation }: any) {
     }
   };
   
-  // Calculate distance between two points (Haversine formula)
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371e3; // Earth's radius in meters
+    const R = 6371e3;
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
     const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-    const a =
-      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
       Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return Math.round(R * c); // Distance in meters
+    return Math.round(R * c);
   };
 
   const onRefresh = async () => {
@@ -239,148 +203,301 @@ export default function EnhancedMapScreen({ navigation }: any) {
 
   const handleNotifyPilot = (pilot: Pilot) => {
     setShowModal(false);
-    // Navigate to ride request screen
     navigation.navigate('RideRequest', { pilot });
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F59E0B" />
-        <Text style={styles.loadingText}>Loading pilots...</Text>
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Finding travelers nearby...</Text>
+          <Text style={styles.loadingSubtext}>Connecting you to the road</Text>
+        </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>📍</Text>
-          <Text style={styles.searchPlaceholder}>Where are you going?</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.brandMark}>
+            <View style={styles.logoMini}>
+              <Text style={styles.logoMiniText}>H</Text>
+            </View>
+            <Text style={styles.brandText}>hitchr</Text>
+          </View>
+          
+          <TouchableOpacity style={styles.tokenBadge}>
+            <Text style={styles.tokenIcon}>🪙</Text>
+            <Text style={styles.tokenValue}>{user?.token_balance || 120}</Text>
+          </TouchableOpacity>
         </View>
-        <View style={styles.tokenBadge}>
-          <Text style={styles.tokenIcon}>🪙</Text>
-          <Text style={styles.tokenValue}>{user?.token_balance || 120}</Text>
+
+        {/* Destination Search */}
+        <TouchableOpacity 
+          style={styles.searchBar}
+          onPress={() => setShowDestinationInput(true)}
+          activeOpacity={0.9}
+        >
+          <View style={styles.searchFrom}>
+            <Text style={styles.searchDot}>●</Text>
+            <View>
+              <Text style={styles.searchLabel}>From</Text>
+              <Text style={styles.searchValue} numberOfLines={1}>
+                {locationName}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.searchDivider} />
+          <View style={styles.searchTo}>
+            <Text style={[styles.searchDot, styles.searchDotDestination]}>◉</Text>
+            <View style={styles.searchToContent}>
+              <Text style={styles.searchLabel}>To</Text>
+              <Text style={[styles.searchValue, !destination && styles.searchPlaceholder]}>
+                {destination || 'Where are you headed?'}
+              </Text>
+            </View>
+            <Text style={styles.searchArrow}>→</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Visual Map Preview */}
+      <View style={styles.mapPreview}>
+        <View style={styles.mapCanvas}>
+          {/* Stylized route visualization */}
+          <View style={styles.routeLine} />
+          
+          {/* User marker */}
+          <View style={styles.userMarker}>
+            <View style={styles.userMarkerInner}>
+              <Text style={styles.userMarkerText}>YOU</Text>
+            </View>
+            <View style={styles.userMarkerPulse} />
+          </View>
+          
+          {/* Pilot markers */}
+          {pilots.slice(0, 4).map((pilot, index) => (
+            <TouchableOpacity
+              key={pilot.id}
+              style={[
+                styles.pilotMarker,
+                { 
+                  top: `${25 + (index * 15)}%`, 
+                  left: `${35 + (index * 12)}%`,
+                },
+              ]}
+              onPress={() => handlePilotPress(pilot)}
+            >
+              <View style={styles.pilotMarkerBubble}>
+                <Text style={styles.pilotMarkerEmoji}>{pilot.avatar}</Text>
+              </View>
+              <View style={styles.pilotMarkerLabel}>
+                <Text style={styles.pilotMarkerDistance}>
+                  {(pilot.distance / 1000).toFixed(1)}km
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+        {/* Map overlay info */}
+        <View style={styles.mapOverlay}>
+          <View style={styles.mapStat}>
+            <Text style={styles.mapStatValue}>{pilots.length}</Text>
+            <Text style={styles.mapStatLabel}>travelers nearby</Text>
+          </View>
         </View>
       </View>
 
-      {/* Map Visualization */}
-      {userLocation && (
-        <View style={styles.mapContainer}>
-          <View style={styles.mapView}>
-            <Text style={styles.mapTitle}>📍 Map View</Text>
-            <Text style={styles.mapCoords}>
-              {locationName}
-            </Text>
-            <View style={styles.mapCanvas}>
-              {/* User marker */}
-              <View style={styles.userMarker}>
-                <Text style={styles.markerText}>YOU</Text>
-              </View>
-              {/* Pilot markers */}
-              {pilots.slice(0, 3).map((pilot, index) => (
-                <View
-                  key={pilot.id}
-                  style={[
-                    styles.pilotMarker,
-                    { top: `${30 + index * 20}%`, left: `${40 + index * 15}%` },
-                  ]}
-                >
-                  <Text style={styles.pilotMarkerText}>{pilot.avatar}</Text>
-                  <Text style={styles.pilotMarkerDistance}>
-                    {(pilot.distance / 1000).toFixed(1)}km
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
+      {/* Quick Stats Bar */}
+      <View style={styles.statsBar}>
+        <View style={styles.statItem}>
+          <Text style={styles.statIcon}>🛺</Text>
+          <Text style={styles.statText}>{pilots.length} pilots</Text>
         </View>
-      )}
-
-      {/* User Location & Pilots Count */}
-      <View style={styles.countCard}>
-        <View>
-          <Text style={styles.countTitle}>{pilots.length} Pilots Nearby</Text>
-          {!locationPermission && (
-            <Text style={styles.warningText}>⚠️ Enable location for accurate results</Text>
-          )}
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statIcon}>📍</Text>
+          <Text style={styles.statText}>10km radius</Text>
         </View>
-        <Text style={styles.hintText}>👆 Tap any pilot to view profile</Text>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statIcon}>⚡</Text>
+          <Text style={styles.statText}>Live</Text>
+        </View>
       </View>
 
       {/* Pilots List */}
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+          />
         }
+        showsVerticalScrollIndicator={false}
       >
+        {/* Section Header */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Pilots on the road</Text>
+          <TouchableOpacity style={styles.filterButton}>
+            <Text style={styles.filterText}>Filter</Text>
+          </TouchableOpacity>
+        </View>
+
         {pilots.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🚗</Text>
-            <Text style={styles.emptyText}>No pilots nearby</Text>
-            <Text style={styles.emptySubtext}>Pull down to refresh</Text>
+            <Text style={styles.emptyIcon}>🛣️</Text>
+            <Text style={styles.emptyTitle}>No pilots nearby</Text>
+            <Text style={styles.emptySubtext}>
+              Pull down to refresh or try a different location
+            </Text>
           </View>
         ) : (
-          pilots.map((pilot) => (
+          pilots.map((pilot, index) => (
             <TouchableOpacity
               key={pilot.id}
-              style={styles.pilotCard}
+              style={[styles.pilotCard, index === 0 && styles.pilotCardFirst]}
               onPress={() => handlePilotPress(pilot)}
+              activeOpacity={0.9}
             >
               <View style={styles.pilotHeader}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{pilot.avatar}</Text>
+                <View style={styles.avatarContainer}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{pilot.avatar}</Text>
+                  </View>
+                  {pilot.verified && (
+                    <View style={styles.verifiedBadge}>
+                      <Text style={styles.verifiedIcon}>✓</Text>
+                    </View>
+                  )}
                 </View>
+                
                 <View style={styles.pilotInfo}>
-                  <Text style={styles.pilotName}>{pilot.name}</Text>
+                  <View style={styles.pilotNameRow}>
+                    <Text style={styles.pilotName}>{pilot.name}</Text>
+                    <View style={styles.ratingBadge}>
+                      <Text style={styles.ratingText}>⭐ {pilot.rating}</Text>
+                    </View>
+                  </View>
+                  
                   <Text style={styles.pilotVehicle}>
                     {pilot.vehicle.type} • {pilot.vehicle.plate}
                   </Text>
-                  <View style={styles.pilotMeta}>
-                    <Text style={styles.pilotRating}>⭐ {pilot.rating}</Text>
-                    <Text style={styles.pilotSeparator}>•</Text>
-                    <Text style={styles.pilotRides}>{pilot.totalRides} rides</Text>
-                    <Text style={styles.pilotSeparator}>•</Text>
-                    <Text style={styles.pilotDistance}>
-                      {(pilot.distance / 1000).toFixed(1)} km
-                    </Text>
+                  
+                  <View style={styles.pilotStats}>
+                    <Text style={styles.pilotStatText}>{pilot.totalRides} rides</Text>
+                    <Text style={styles.pilotStatDot}>•</Text>
+                    <Text style={styles.pilotStatText}>{Math.round(pilot.totalKm)} km</Text>
                   </View>
                 </View>
               </View>
-              
+
+              {/* Badges */}
               {pilot.badges && pilot.badges.length > 0 && (
-                <View style={styles.badgesContainer}>
-                  {pilot.badges.slice(0, 2).map((badge, index) => (
-                    <View key={index} style={styles.badge}>
+                <View style={styles.badgesRow}>
+                  {pilot.badges.slice(0, 3).map((badge, i) => (
+                    <View key={i} style={styles.badge}>
                       <Text style={styles.badgeText}>{badge}</Text>
                     </View>
                   ))}
-                  {pilot.badges.length > 2 && (
+                  {pilot.badges.length > 3 && (
                     <View style={[styles.badge, styles.badgeMore]}>
-                      <Text style={styles.badgeText}>+{pilot.badges.length - 2}</Text>
+                      <Text style={styles.badgeMoreText}>+{pilot.badges.length - 3}</Text>
                     </View>
                   )}
                 </View>
               )}
-              
-              <View style={styles.quickActions}>
-                <View style={styles.proximityBadge}>
-                  <View style={styles.pulseDot} />
-                  <Text style={styles.proximityText}>
-                    {(pilot.distance / 1000).toFixed(1)} km • ~{Math.ceil(pilot.distance / 500)} mins
+
+              {/* Action Row */}
+              <View style={styles.actionRow}>
+                <View style={styles.distanceBadge}>
+                  <View style={styles.distanceDot} />
+                  <Text style={styles.distanceText}>
+                    {(pilot.distance / 1000).toFixed(1)} km away
+                  </Text>
+                  <Text style={styles.etaText}>
+                    ~{Math.ceil(pilot.distance / 500)} min
                   </Text>
                 </View>
-                <TouchableOpacity style={styles.notifyButton}>
-                  <Text style={styles.notifyButtonText}>View Profile →</Text>
+                
+                <TouchableOpacity 
+                  style={styles.notifyButton}
+                  onPress={() => handleNotifyPilot(pilot)}
+                >
+                  <Text style={styles.notifyButtonText}>Notify</Text>
+                  <Text style={styles.notifyButtonIcon}>→</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
           ))
         )}
+        
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Destination Input Modal */}
+      <Modal
+        visible={showDestinationInput}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDestinationInput(false)}
+      >
+        <View style={styles.destinationModal}>
+          <View style={styles.destinationContent}>
+            <View style={styles.destinationHeader}>
+              <Text style={styles.destinationTitle}>Where to?</Text>
+              <TouchableOpacity 
+                onPress={() => setShowDestinationInput(false)}
+                style={styles.destinationClose}
+              >
+                <Text style={styles.destinationCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TextInput
+              style={styles.destinationInput}
+              placeholder="Enter your destination"
+              placeholderTextColor={theme.colors.textTertiary}
+              value={destination}
+              onChangeText={setDestination}
+              autoFocus
+            />
+            
+            <View style={styles.quickDestinations}>
+              <Text style={styles.quickTitle}>Popular destinations</Text>
+              {['Bangalore Airport', 'MG Road', 'Koramangala', 'Electronic City'].map((place) => (
+                <TouchableOpacity
+                  key={place}
+                  style={styles.quickItem}
+                  onPress={() => {
+                    setDestination(place);
+                    setShowDestinationInput(false);
+                  }}
+                >
+                  <Text style={styles.quickIcon}>📍</Text>
+                  <Text style={styles.quickText}>{place}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.destinationButton}
+              onPress={() => setShowDestinationInput(false)}
+            >
+              <Text style={styles.destinationButtonText}>Find Pilots</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Pilot Profile Modal */}
       <Modal
@@ -401,339 +518,632 @@ export default function EnhancedMapScreen({ navigation }: any) {
           />
         )}
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+  },
+  loadingContent: {
+    alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#64748B',
+    marginTop: theme.spacing.lg,
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
   },
-  header: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    paddingTop: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  searchPlaceholder: {
+  loadingSubtext: {
+    marginTop: 4,
     fontSize: 14,
-    color: '#94A3B8',
+    color: theme.colors.textTertiary,
+  },
+  
+  // Header
+  header: {
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.md,
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.border,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  brandMark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoMini: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoMiniText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: theme.colors.textOnPrimary,
+  },
+  brandText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: theme.colors.textPrimary,
+    letterSpacing: -0.5,
   },
   tokenBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: `${theme.colors.primary}20`,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.pill,
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary,
     gap: 4,
   },
   tokenIcon: {
-    fontSize: 16,
+    fontSize: 14,
   },
   tokenValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 15,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
   },
-  countCard: {
-    backgroundColor: '#FFFFFF',
-    margin: 12,
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+  
+  // Search Bar
+  searchBar: {
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderRadius: theme.borderRadius.xl,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    overflow: 'hidden',
   },
-  countTitle: {
+  searchFrom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    gap: 12,
+  },
+  searchTo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    gap: 12,
+  },
+  searchToContent: {
+    flex: 1,
+  },
+  searchDot: {
+    fontSize: 12,
+    color: theme.colors.accent,
+  },
+  searchDotDestination: {
+    color: theme.colors.secondary,
+  },
+  searchLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  searchValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+    marginTop: 2,
+  },
+  searchPlaceholder: {
+    color: theme.colors.textTertiary,
+  },
+  searchDivider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginHorizontal: theme.spacing.md,
+  },
+  searchArrow: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 4,
+    color: theme.colors.secondary,
+    fontWeight: '700',
   },
-  countSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 8,
-  },
-  warningText: {
-    fontSize: 12,
-    color: '#F59E0B',
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  hintText: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  mapContainer: {
-    margin: 12,
-    marginTop: 0,
-  },
-  mapView: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  mapTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  mapCoords: {
-    fontSize: 12,
-    color: '#64748B',
-    marginBottom: 12,
+  
+  // Map Preview
+  mapPreview: {
+    height: 180,
+    margin: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    borderRadius: theme.borderRadius.xxl,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    position: 'relative',
   },
   mapCanvas: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#E0F2FE',
-    borderRadius: 12,
+    flex: 1,
+    backgroundColor: '#E8F4E8', // Soft green map background
     position: 'relative',
-    overflow: 'hidden',
+  },
+  routeLine: {
+    position: 'absolute',
+    top: '45%',
+    left: '15%',
+    right: '15%',
+    height: 3,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 2,
   },
   userMarker: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: 50,
-    height: 50,
-    marginLeft: -25,
-    marginTop: -25,
-    borderRadius: 25,
-    backgroundColor: '#3B82F6',
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
+    top: '40%',
+    left: '12%',
+    alignItems: 'center',
+  },
+  userMarkerInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.rider,
+    borderWidth: 3,
+    borderColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 5,
+    ...theme.shadows.md,
   },
-  markerText: {
+  userMarkerText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '800',
+    color: theme.colors.textInverse,
+  },
+  userMarkerPulse: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: `${theme.colors.rider}30`,
   },
   pilotMarker: {
     position: 'absolute',
     alignItems: 'center',
   },
-  pilotMarkerText: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    backgroundColor: '#F59E0B',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 29,
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 4,
+  pilotMarkerBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...theme.shadows.sm,
+  },
+  pilotMarkerEmoji: {
+    fontSize: 18,
+  },
+  pilotMarkerLabel: {
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   pilotMarkerDistance: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#0F172A',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginTop: 4,
-    overflow: 'hidden',
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
   },
+  mapOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: theme.spacing.sm,
+    backgroundColor: 'rgba(27, 27, 27, 0.85)',
+  },
+  mapStat: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  mapStatValue: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: theme.colors.primary,
+  },
+  mapStatLabel: {
+    fontSize: 13,
+    color: theme.colors.textInverse,
+    fontWeight: '500',
+  },
+  
+  // Stats Bar
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    marginHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.sm,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  statIcon: {
+    fontSize: 14,
+  },
+  statText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  statDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: theme.colors.border,
+  },
+  
+  // Scroll Content
   scrollView: {
     flex: 1,
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 60,
+  scrollContent: {
+    paddingHorizontal: theme.spacing.md,
   },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-  pilotCard: {
-    backgroundColor: '#FFFFFF',
-    margin: 12,
-    marginTop: 6,
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  pilotHeader: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F59E0B',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  pilotInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  pilotName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  pilotVehicle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginBottom: 4,
-  },
-  pilotMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pilotRating: {
-    fontSize: 13,
-    color: '#F59E0B',
-    fontWeight: '600',
-  },
-  pilotSeparator: {
-    fontSize: 13,
-    color: '#CBD5E1',
-    marginHorizontal: 6,
-  },
-  pilotRides: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  pilotDistance: {
-    fontSize: 13,
-    color: '#3B82F6',
-    fontWeight: '600',
-  },
-  badgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  badge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  badgeMore: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#F59E0B',
-  },
-  quickActions: {
+  
+  // Section Header
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: theme.spacing.md,
+    marginTop: theme.spacing.sm,
   },
-  proximityBadge: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  filterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  
+  // Empty State
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xxl,
+  },
+  emptyIcon: {
+    fontSize: 56,
+    marginBottom: theme.spacing.md,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: theme.colors.textTertiary,
+    textAlign: 'center',
+  },
+  
+  // Pilot Card
+  pilotCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xxl,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
+  },
+  pilotCardFirst: {
+    borderColor: theme.colors.primary,
+    ...theme.shadows.glow,
+  },
+  pilotHeader: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  avatarContainer: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 24,
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: theme.colors.accent,
+    borderWidth: 2,
+    borderColor: theme.colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifiedIcon: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: theme.colors.textInverse,
+  },
+  pilotInfo: {
+    flex: 1,
+  },
+  pilotNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  pilotName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  ratingBadge: {
+    backgroundColor: `${theme.colors.warning}20`,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.borderRadius.sm,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.warning,
+  },
+  pilotVehicle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginBottom: 4,
+  },
+  pilotStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pilotStatText: {
+    fontSize: 12,
+    color: theme.colors.textTertiary,
+    fontWeight: '500',
+  },
+  pilotStatDot: {
+    fontSize: 12,
+    color: theme.colors.textTertiary,
+  },
+  
+  // Badges
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderLight,
+  },
+  badge: {
+    backgroundColor: `${theme.colors.primary}15`,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.borderRadius.md,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+  },
+  badgeMore: {
+    backgroundColor: theme.colors.surfaceSecondary,
+  },
+  badgeMoreText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.textTertiary,
+  },
+  
+  // Action Row
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderLight,
+  },
+  distanceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: `${theme.colors.accent}15`,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 12,
-    gap: 8,
+    borderRadius: theme.borderRadius.md,
   },
-  pulseDot: {
+  distanceDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10B981',
+    backgroundColor: theme.colors.accent,
   },
-  proximityText: {
+  distanceText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#10B981',
+    fontWeight: '700',
+    color: theme.colors.accent,
+  },
+  etaText: {
+    fontSize: 11,
+    color: theme.colors.textTertiary,
+    fontWeight: '500',
   },
   notifyButton: {
-    backgroundColor: '#F59E0B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.secondary,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    gap: 6,
+    ...theme.shadows.magenta,
   },
   notifyButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: theme.colors.textInverse,
+  },
+  notifyButtonIcon: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.textInverse,
+  },
+  
+  bottomSpacer: {
+    height: theme.spacing.xxl,
+  },
+  
+  // Destination Modal
+  destinationModal: {
+    flex: 1,
+    backgroundColor: 'rgba(27, 27, 27, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  destinationContent: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borderRadius.xxl,
+    borderTopRightRadius: theme.borderRadius.xxl,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+  },
+  destinationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  destinationTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+  },
+  destinationClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  destinationCloseText: {
+    fontSize: 16,
+    color: theme.colors.textSecondary,
+  },
+  destinationInput: {
+    height: 56,
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.md,
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.lg,
+  },
+  quickDestinations: {
+    marginBottom: theme.spacing.lg,
+  },
+  quickTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing.md,
+  },
+  quickItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderLight,
+  },
+  quickIcon: {
+    fontSize: 16,
+  },
+  quickText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.textPrimary,
+  },
+  destinationButton: {
+    height: 56,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...theme.shadows.glow,
+  },
+  destinationButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textOnPrimary,
   },
 });
-

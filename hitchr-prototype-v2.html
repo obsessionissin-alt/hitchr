@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitchr - Social Coordination for Movement</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           CSS VARIABLES - DAY THEME
+        ═════════════════════════════════════════════════════════════ */
+        :root[data-theme="day"] {
+            /* Base Colors */
+            --bg-primary: #FFFEF9;
+            --bg-secondary: #F5F1E8;
+            --bg-tertiary: #FFF5F2;
+            --text-primary: #2D2A26;
+            --text-secondary: #6B6661;
+            --text-tertiary: #9B9690;
+            
+            /* Accent Colors */
+            --accent-primary: #FF6B35;
+            --accent-secondary: #FFD23F;
+            --accent-tertiary: #4A90E2;
+            --trust-green: #52C41A;
+            --trust-blue: #1890FF;
+            
+            /* Semantic Colors */
+            --coral-50: #FFF5F2;
+            --coral-100: #FFE5DD;
+            --coral-500: #FF6B35;
+            --coral-600: #E85A28;
+            --mustard-50: #FFF9E6;
+            --mustard-500: #FFD23F;
+            --blue-50: #E8F4FD;
+            --blue-500: #4A90E2;
+            --green-50: #F0F7ED;
+            --green-500: #52C41A;
+            
+            /* Grays */
+            --gray-50: #FAFAF9;
+            --gray-100: #F5F5F4;
+            --gray-200: #E7E5E4;
+            --gray-300: #D6D3D1;
+            --gray-400: #A8A29E;
+            --gray-500: #78716C;
+            --gray-600: #57534E;
+            --gray-700: #44403C;
+            --gray-800: #292524;
+            --gray-900: #1C1917;
+            
+            /* UI Elements */
+            --white: #FFFFFF;
+            --black: #000000;
+            --shadow-soft: 0 2px 8px rgba(45, 42, 38, 0.08);
+            --shadow-float: 0 4px 16px rgba(45, 42, 38, 0.12);
+            --shadow-heavy: 0 8px 32px rgba(45, 42, 38, 0.16);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           CSS VARIABLES - NIGHT THEME
+        ═════════════════════════════════════════════════════════════ */
+        :root[data-theme="night"] {
+            /* Base Colors - Rich Dark Blues/Purples */
+            --bg-primary: #1C1B29;
+            --bg-secondary: #252338;
+            --bg-tertiary: #2D2B3E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B8B5D0;
+            --text-tertiary: #8B89A8;
+            
+            /* Accent Colors - Vibrant Neons */
+            --accent-primary: #FF3D71;
+            --accent-secondary: #00E7FF;
+            --accent-tertiary: #A855F7;
+            --trust-green: #10F268;
+            --trust-blue: #3D9BFF;
+            
+            /* Semantic Colors - Rich Darks with Neon Accents */
+            --coral-50: #2D1F2C;
+            --coral-100: #4A2744;
+            --coral-500: #FF3D71;
+            --coral-600: #E62958;
+            --mustard-50: #2E2B1F;
+            --mustard-500: #FFD93D;
+            --blue-50: #1F2534;
+            --blue-500: #3D9BFF;
+            --green-50: #1F2E28;
+            --green-500: #10F268;
+            
+            /* Grays - Purple-tinted */
+            --gray-50: #2A2838;
+            --gray-100: #342F47;
+            --gray-200: #3F3A56;
+            --gray-300: #4D4764;
+            --gray-400: #625D7A;
+            --gray-500: #7A7590;
+            --gray-600: #9B94B5;
+            --gray-700: #B8B5D0;
+            --gray-800: #D1CFEA;
+            --gray-900: #E8E7F5;
+            
+            /* UI Elements - Glowing Shadows */
+            --white: #FFFFFF;
+            --black: #0D0C15;
+            --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.4), 0 0 1px rgba(168, 85, 247, 0.1);
+            --shadow-float: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 2px rgba(168, 85, 247, 0.15);
+            --shadow-heavy: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 3px rgba(168, 85, 247, 0.2);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           GLOBAL VARIABLES (THEME-INDEPENDENT)
+        ═════════════════════════════════════════════════════════════ */
+        :root {
+            /* Typography */
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+            --font-family-display: Georgia, "Times New Roman", serif;
+            
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-md: 1.125rem;
+            --font-size-lg: 1.25rem;
+            --font-size-xl: 1.5rem;
+            --font-size-2xl: 2rem;
+            --font-size-3xl: 2.5rem;
+            
+            /* Spacing */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+            
+            /* Border Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-full: 9999px;
+            
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           BASE STYLES
+        ═════════════════════════════════════════════════════════════ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-family);
+            font-size: var(--font-size-base);
+            color: var(--text-primary);
+            background: var(--gray-100);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.4s ease, color 0.3s ease;
+        }
+        
+        /* Night theme gradient background */
+        [data-theme="night"] body {
+            background: linear-gradient(135deg, #1C1B29 0%, #252338 50%, #1F1E2E 100%);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           APP CONTAINER
+        ═════════════════════════════════════════════════════════════ */
+        .app-container {
+            max-width: 430px;
+            margin: 0 auto;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        /* Night theme container glow */
+        [data-theme="night"] .app-container {
+            box-shadow: 0 0 60px rgba(168, 85, 247, 0.15), 
+                        0 0 100px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Scenario Management */
+        .scenario {
+            display: none;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .scenario.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           HEADER
+        ═════════════════════════════════════════════════════════════ */
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md);
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--gray-200);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        /* Night theme header with subtle glow */
+        [data-theme="night"] .app-header {
+            background: rgba(28, 27, 41, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        .app-logo {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: -0.5px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+        
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .header-btn:hover {
+            background: var(--gray-200);
+            transform: scale(1.05);
+        }
+        
+        .header-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           SCROLL CONTENT
+        ═════════════════════════════════════════════════════════════ */
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-md);
+            padding-bottom: 100px;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           BOTTOM NAVIGATION
+        ═════════════════════════════════════════════════════════════ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: var(--space-sm) var(--space-md);
+            box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
+        }
+        
+        /* Night theme bottom nav with glow */
+        [data-theme="night"] .bottom-nav {
+            background: rgba(28, 27, 41, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(168, 85, 247, 0.2);
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4),
+                        0 0 1px rgba(168, 85, 247, 0.3);
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            padding: var(--space-sm);
+            flex: 1;
+        }
+        
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--text-tertiary);
+            transition: color var(--transition-fast);
+        }
+        
+        .nav-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            transition: color var(--transition-fast);
+        }
+        
+        .nav-item.active .nav-icon,
+        .nav-item.active .nav-label {
+            color: var(--accent-primary);
+        }
+        
+        .composer-btn {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-float);
+            transition: all var(--transition-fast);
+            margin-top: -20px;
+        }
+        
+        .composer-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .composer-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Night theme composer with strong glow */
+        [data-theme="night"] .composer-btn {
+            background: linear-gradient(135deg, #FF3D71 0%, #A855F7 100%);
+            box-shadow: 0 8px 32px rgba(255, 61, 113, 0.4),
+                        0 0 40px rgba(168, 85, 247, 0.3);
+        }
+        
+        [data-theme="night"] .composer-btn:hover {
+            box-shadow: 0 12px 40px rgba(255, 61, 113, 0.5),
+                        0 0 60px rgba(168, 85, 247, 0.4);
+            transform: scale(1.15);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           ICONS
+        ═════════════════════════════════════════════════════════════ */
+        .icon {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        
+        .icon-sm {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        
+        .icon-lg {
+            width: 32px;
+            height: 32px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           LIVE MAP PREVIEW
+        ═════════════════════════════════════════════════════════════ */
+        .live-map-preview {
+            height: 180px;
+            background: linear-gradient(135deg, var(--blue-50) 0%, var(--green-50) 50%, var(--mustard-50) 100%);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-lg);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        
+        .live-map-preview:hover {
+            transform: scale(1.02);
+        }
+        
+        /* Night theme map preview with rich gradient and glow */
+        [data-theme="night"] .live-map-preview {
+            background: linear-gradient(135deg, #1F2534 0%, #1F2E28 50%, #2E2B1F 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        0 0 40px rgba(61, 155, 255, 0.1) inset;
+        }
+        
+        [data-theme="night"] .live-map-preview:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                        0 0 60px rgba(168, 85, 247, 0.15);
+        }
+        
+        .live-map-preview-label {
+            position: absolute;
+            top: var(--space-md);
+            left: var(--space-md);
+            background: var(--white);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .live-map-pulse {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--coral-500);
+            border-radius: var(--radius-full);
+            animation: pulse-ring 2s ease-in-out infinite;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           MOVEMENT RIBBON
+        ═════════════════════════════════════════════════════════════ */
+        .movement-ribbon {
+            display: flex;
+            gap: var(--space-sm);
+            overflow-x: auto;
+            margin-bottom: var(--space-lg);
+            padding-bottom: var(--space-sm);
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .movement-ribbon::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .destination-chip {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--white);
+            border-radius: var(--radius-full);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .destination-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-float);
+        }
+        
+        /* Night theme destination chips with glow */
+        [data-theme="night"] .destination-chip {
+            background: linear-gradient(135deg, #2A2838 0%, #252338 100%);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        [data-theme="night"] .destination-chip:hover {
+            border-color: rgba(255, 61, 113, 0.5);
+            box-shadow: 0 4px 20px rgba(255, 61, 113, 0.2);
+            transform: translateY(-3px);
+        }
+        
+        /* Night theme map backgrounds */
+        [data-theme="night"] .map-view-container {
+            background: linear-gradient(135deg, #1F2534 0%, #1F2E28 50%, #2E2B1F 100%) !important;
+        }
+        
+        [data-theme="night"] .riding-view-container {
+            background: linear-gradient(135deg, #1F2534 0%, #1F2E28 50%, #2E2B1F 100%) !important;
+        }
+        
+        /* Night theme SVG pattern */
+        [data-theme="night"] #grid-pattern path,
+        [data-theme="night"] #grid-pattern-2 path {
+            stroke: rgba(168, 85, 247, 0.2);
+        }
+        
+        /* Night theme journey cards - NO gradients, solid dark with glowing borders */
+        [data-theme="night"] .journey-card-live {
+            background: #2A2838;
+            border: 2px solid #FF3D71;
+            box-shadow: 0 0 20px rgba(255, 61, 113, 0.3),
+                        0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        [data-theme="night"] .journey-card-live:hover {
+            box-shadow: 0 0 30px rgba(255, 61, 113, 0.5),
+                        0 8px 24px rgba(0, 0, 0, 0.5);
+            transform: translateY(-4px);
+        }
+        
+        [data-theme="night"] .journey-card-planned {
+            background: #2A2838;
+            border: 2px solid #3D9BFF;
+            box-shadow: 0 0 20px rgba(61, 155, 255, 0.3),
+                        0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        [data-theme="night"] .journey-card-planned:hover {
+            box-shadow: 0 0 30px rgba(61, 155, 255, 0.5),
+                        0 8px 24px rgba(0, 0, 0, 0.5);
+            transform: translateY(-4px);
+        }
+        
+        [data-theme="night"] .journey-card-memory {
+            background: #2A2838;
+            border: 2px solid #FFD93D;
+            box-shadow: 0 0 20px rgba(255, 217, 61, 0.3),
+                        0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        [data-theme="night"] .journey-card-memory:hover {
+            box-shadow: 0 0 30px rgba(255, 217, 61, 0.5),
+                        0 8px 24px rgba(0, 0, 0, 0.5);
+            transform: translateY(-4px);
+        }
+        
+        .destination-chip-count {
+            font-weight: 700;
+            color: var(--accent-primary);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           SECTION HEADER
+        ═════════════════════════════════════════════════════════════ */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-lg);
+            margin-top: var(--space-xl);
+            padding-bottom: var(--space-sm);
+            border-bottom: 3px solid var(--coral-500);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+        
+        .section-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--coral-500);
+            color: var(--white);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Night theme section badge with glow */
+        [data-theme="night"] .section-badge {
+            background: linear-gradient(135deg, #FF3D71 0%, #A855F7 100%);
+            box-shadow: 0 0 20px rgba(255, 61, 113, 0.4),
+                        0 0 10px rgba(168, 85, 247, 0.3);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           FEED CARDS
+        ═════════════════════════════════════════════════════════════ */
+        .feed-cards {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+        
+        .card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-soft);
+            transition: all var(--transition-base);
+            animation: scale-in 0.3s ease-out;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-float);
+            transform: translateY(-2px);
+            border-color: var(--coral-500);
+        }
+        
+        /* Night theme cards with depth */
+        [data-theme="night"] .card {
+            background: linear-gradient(135deg, #2A2838 0%, #252338 100%);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 
+                        0 0 1px rgba(168, 85, 247, 0.3) inset;
+        }
+        
+        [data-theme="night"] .card:hover {
+            border-color: rgba(255, 61, 113, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 
+                        0 0 20px rgba(255, 61, 113, 0.15);
+            transform: translateY(-4px);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        
+        .card-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .avatar-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 20px;
+            height: 20px;
+            background: var(--coral-500);
+            border: 2px solid var(--white);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        
+        .card-user-info {
+            flex: 1;
+        }
+        
+        .card-user-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .card-type-badge {
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-size-xs);
+            font-weight: 600;
+        }
+        
+        .badge-live {
+            background: var(--coral-100);
+            color: var(--coral-600);
+        }
+        
+        .badge-planned {
+            background: var(--blue-50);
+            color: var(--blue-500);
+        }
+        
+        .card-content {
+            margin-bottom: var(--space-md);
+        }
+        
+        .card-text {
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin-bottom: var(--space-md);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           ROUTE BLOCK
+        ═════════════════════════════════════════════════════════════ */
+        .route-block {
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            margin: var(--space-md) 0;
+        }
+        
+        /* Night theme route block with glow */
+        [data-theme="night"] .route-block {
+            background: linear-gradient(135deg, #1F1E2E 0%, #252338 100%);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) inset;
+        }
+        
+        .route-visual {
+            display: flex;
+            gap: var(--space-md);
+        }
+        
+        .route-line {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .route-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: var(--radius-full);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .route-dot.origin {
+            background: var(--coral-500);
+        }
+        
+        .route-dot.destination {
+            background: var(--blue-500);
+        }
+        
+        .route-connector {
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--coral-500), var(--blue-500));
+            border-radius: var(--radius-full);
+        }
+        
+        .route-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .route-point {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .route-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .route-place {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .route-stats {
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-sm);
+        }
+        
+        .route-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           CARD ACTIONS
+        ═════════════════════════════════════════════════════════════ */
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+        
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            border: none;
+            background: var(--gray-100);
+            border-radius: var(--radius-full);
+            font-family: var(--font-family);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .action-btn:hover {
+            background: var(--gray-200);
+            transform: translateY(-1px);
+        }
+        
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .action-btn.primary {
+            background: var(--coral-500);
+            color: var(--white);
+        }
+        
+        .action-btn.primary:hover {
+            background: var(--coral-600);
+        }
+        
+        /* Night theme primary button with glow */
+        [data-theme="night"] .action-btn.primary {
+            background: linear-gradient(135deg, #FF3D71 0%, #E62958 100%);
+            box-shadow: 0 4px 16px rgba(255, 61, 113, 0.3),
+                        0 0 20px rgba(255, 61, 113, 0.2);
+        }
+        
+        [data-theme="night"] .action-btn.primary:hover {
+            box-shadow: 0 6px 24px rgba(255, 61, 113, 0.4),
+                        0 0 30px rgba(255, 61, 113, 0.3);
+        }
+        
+        .interested-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            border: 2px solid var(--coral-500);
+            background: transparent;
+            border-radius: var(--radius-full);
+            font-family: var(--font-family);
+            font-size: var(--font-size-base);
+            font-weight: 600;
+            color: var(--coral-500);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .interested-btn:hover {
+            background: var(--coral-500);
+            color: var(--white);
+        }
+        
+        .action-spacer {
+            flex: 1;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           MODALS & OVERLAYS
+        ═════════════════════════════════════════════════════════════ */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            animation: fade-in 0.2s ease-out;
+        }
+        
+        .modal-overlay.active {
+            display: block;
+        }
+        
+        .modal-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            padding: var(--space-lg);
+            animation: slide-up 0.3s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        /* Night theme modal with depth */
+        [data-theme="night"] .modal-sheet {
+            background: linear-gradient(180deg, #2D2B3E 0%, #252338 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-bottom: none;
+            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.6),
+                        0 0 2px rgba(168, 85, 247, 0.4) inset;
+        }
+        
+        .modal-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--gray-300);
+            border-radius: var(--radius-full);
+            margin: 0 auto var(--space-lg);
+        }
+        
+        .modal-title {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .modal-subtitle {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-lg);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           JOURNEY COMPOSER
+        ═════════════════════════════════════════════════════════════ */
+        .composer-step-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--space-lg);
+            text-align: center;
+        }
+        
+        .journey-type-cards {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+        
+        .journey-type-card {
+            background: var(--white);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        
+        .journey-type-card:hover {
+            box-shadow: var(--shadow-float);
+            transform: translateY(-2px);
+        }
+        
+        .journey-type-card:active {
+            transform: scale(0.98);
+        }
+        
+        .journey-type-icon {
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--space-md);
+        }
+        
+        .journey-type-title {
+            font-size: var(--font-size-md);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .journey-type-desc {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .compose-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+        
+        .form-label {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: var(--space-md);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-family: var(--font-family);
+            font-size: var(--font-size-base);
+            color: var(--text-primary);
+            background: var(--white);
+            transition: all var(--transition-fast);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--coral-50);
+        }
+        
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .route-input-group {
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+        }
+        
+        .route-input-visual {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+        
+        .route-input-line {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: var(--space-lg);
+            border: none;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--white);
+            font-family: var(--font-family);
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-float);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-heavy);
+        }
+        
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           ANIMATIONS
+        ═════════════════════════════════════════════════════════════ */
+        @keyframes pulse-ring {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes slide-up {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes scale-in {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes draw-line {
+            from {
+                stroke-dashoffset: 200;
+            }
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           UTILITY CLASSES
+        ═════════════════════════════════════════════════════════════ */
+        .hinglish-text {
+            font-family: var(--font-family-display);
+            font-style: italic;
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .pulse-badge {
+            animation: pulse-ring 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             SCENARIO 1: HOME FEED
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="scenario active" id="scenario-home">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="app-logo">hitchr</div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="openSearch()">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                    </button>
+                    <button class="header-btn">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+            
+            <!-- Scroll Content -->
+            <div class="scroll-content">
+                <!-- Live Map Preview -->
+                <div class="live-map-preview" onclick="switchScenario('map')">
+                    <div class="live-map-preview-label">25 people moving near you</div>
+                    <div class="live-map-pulse" style="top: 60px; left: 100px;"></div>
+                    <div class="live-map-pulse" style="top: 100px; right: 80px; animation-delay: 0.5s;"></div>
+                    <div class="live-map-pulse" style="bottom: 80px; left: 120px; animation-delay: 1s;"></div>
+                </div>
+                
+                <!-- Movement Ribbon -->
+                <div class="movement-ribbon">
+                    <div class="destination-chip">
+                        <span class="destination-chip-count">12</span>
+                        <span>North Ridge</span>
+                    </div>
+                    <div class="destination-chip">
+                        <span class="destination-chip-count">8</span>
+                        <span>Downtown</span>
+                    </div>
+                    <div class="destination-chip">
+                        <span class="destination-chip-count">5</span>
+                        <span>Beach</span>
+                    </div>
+                    <div class="destination-chip">
+                        <span class="destination-chip-count">3</span>
+                        <span>City Center</span>
+                    </div>
+                </div>
+                
+                <!-- Live Now Section -->
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-badge">Live</span>
+                        Moving Now
+                    </h2>
+                </div>
+                
+                <div class="feed-cards">
+                    <!-- Live Card 1 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-avatar">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" alt="User">
+                                <span class="avatar-badge">⭐</span>
+                            </div>
+                            <div class="card-user-info">
+                                <div class="card-user-name">Rohan Mehta</div>
+                                <div class="card-meta">
+                                    <span class="card-type-badge badge-live">Live Now</span>
+                                    <span>2 min ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-content">
+                            <p class="card-text">Heading to North Ridge, anyone else going? Got space for 2 more!</p>
+                        </div>
+                        
+                        <div class="route-block">
+                            <div class="route-visual">
+                                <div class="route-line">
+                                    <div class="route-dot origin"></div>
+                                    <div class="route-connector"></div>
+                                    <div class="route-dot destination"></div>
+                                </div>
+                                <div class="route-details">
+                                    <div class="route-point">
+                                        <span class="route-label">From</span>
+                                        <span class="route-place">DU North Campus</span>
+                                    </div>
+                                    <div class="route-point">
+                                        <span class="route-label">To</span>
+                                        <span class="route-place">North Ridge</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="route-stats">
+                                <span class="route-stat">
+                                    <svg class="icon-sm" viewBox="0 0 24 24">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    8km
+                                </span>
+                                <span class="route-stat">
+                                    <svg class="icon-sm" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    15 min
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-actions">
+                            <button class="action-btn">
+                                <svg class="icon-sm" viewBox="0 0 24 24">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                </svg>
+                            </button>
+                            <span class="action-spacer"></span>
+                            <button class="action-btn primary" onclick="openHitModal('Rohan')">
+                                <svg class="icon-sm" viewBox="0 0 24 24">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>
+                                </svg>
+                                Hit
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Live Card 2 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-avatar">
+                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" alt="User">
+                                <span class="avatar-badge">🎓</span>
+                            </div>
+                            <div class="card-user-info">
+                                <div class="card-user-name">Priya Kumar</div>
+                                <div class="card-meta">
+                                    <span class="card-type-badge badge-live">Live Now</span>
+                                    <span>5 min ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-content">
+                            <p class="card-text">Heading to beach for sunset. Anyone else free to join?</p>
+                        </div>
+                        
+                        <div class="route-block">
+                            <div class="route-visual">
+                                <div class="route-line">
+                                    <div class="route-dot origin"></div>
+                                    <div class="route-connector"></div>
+                                    <div class="route-dot destination"></div>
+                                </div>
+                                <div class="route-details">
+                                    <div class="route-point">
+                                        <span class="route-label">From</span>
+                                        <span class="route-place">Koramangala</span>
+                                    </div>
+                                    <div class="route-point">
+                                        <span class="route-label">To</span>
+                                        <span class="route-place">Beach Road</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="route-stats">
+                                <span class="route-stat">
+                                    <svg class="icon-sm" viewBox="0 0 24 24">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    12km
+                                </span>
+                                <span class="route-stat">
+                                    <svg class="icon-sm" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    25 min
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-actions">
+                            <button class="action-btn">
+                                <svg class="icon-sm" viewBox="0 0 24 24">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                                </svg>
+                            </button>
+                            <span class="action-spacer"></span>
+                            <button class="action-btn primary" onclick="openHitModal('Priya')">
+                                <svg class="icon-sm" viewBox="0 0 24 24">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/>
+                                </svg>
+                                Hit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trips Being Planned Section -->
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-badge">Upcoming</span>
+                        Trips Being Planned
+                    </h2>
+                </div>
+                
+                <div class="feed-cards">
+                    <!-- Planning Card 1 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-avatar">
+                                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150" alt="User">
+                                <span class="avatar-badge">👑</span>
+                            </div>
+                            <div class="card-user-info">
+                                <div class="card-user-name">Arjun Singh</div>
+                                <div class="card-meta">
+                                    <span class="card-type-badge badge-planned">Planning</span>
+                                    <span>Aug 15-20</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-content">
+                            <p class="card-text">Weekend trip to the mountains. Looking for chill people who love slow travel and chai stops.</p>
+                        </div>
+                        
+                        <div class="route-block">
+                            <div class="route-visual">
+                                <div class="route-line">
+                                    <div class="route-dot origin"></div>
+                                    <div class="route-connector"></div>
+                                    <div class="route-dot destination"></div>
+                                </div>
+                                <div class="route-details">
+                                    <div class="route-point">
+                                        <span class="route-label">From</span>
+                                        <span class="route-place">Delhi</span>
+                                    </div>
+                                    <div class="route-point">
+                                        <span class="route-label">To</span>
+                                        <span class="route-place">Manali</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="route-stats">
+                                <span class="route-stat">
+                                    <svg class="icon-sm" viewBox="0 0 24 24">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    540km
+                                </span>
+                                <span class="route-stat">
+                                    <svg class="icon-sm" viewBox="0 0 24 24">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                    6 interested
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-actions">
+                            <button class="interested-btn">
+                                <svg class="icon-sm" viewBox="0 0 24 24">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="currentColor"/>
+                                </svg>
+                                I'm Interested
+                            </button>
+                            <button class="action-btn">
+                                <svg class="icon-sm" viewBox="0 0 24 24">
+                                    <circle cx="18" cy="5" r="3"/>
+                                    <circle cx="6" cy="12" r="3"/>
+                                    <circle cx="18" cy="19" r="3"/>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <button class="nav-item active">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Home</span>
+                </button>
+                <button class="nav-item" onclick="switchScenario('communities')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M2 12h20"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Communities</span>
+                </button>
+                <button class="composer-btn" onclick="switchScenario('composer')">
+                    <svg class="icon-lg" style="color: white;" viewBox="0 0 24 24">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </button>
+                <button class="nav-item" onclick="switchScenario('map')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Map</span>
+                </button>
+                <button class="nav-item" onclick="switchScenario('profile')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Profile</span>
+                </button>
+            </nav>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             SCENARIO 2: JOURNEY COMPOSER
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="scenario" id="scenario-composer">
+            <header class="app-header">
+                <button class="header-btn" onclick="switchScenario('home')">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div class="app-logo">New Journey</div>
+                <div style="width: 40px;"></div>
+            </header>
+            
+            <div class="scroll-content">
+                <h1 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-lg); text-align: center;">Where are you headed?</h1>
+                <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-2xl); font-size: var(--font-size-base);">Pick what you want to share</p>
+                
+                <div class="journey-type-cards">
+                    <div class="journey-type-card journey-card-live" onclick="selectJourneyType('live')" style="border: 2px solid var(--coral-500);">
+                        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
+                            <div style="width: 56px; height: 56px; background: var(--coral-500); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-2xl); box-shadow: var(--shadow-soft);">🚗</div>
+                            <div style="flex: 1; text-align: left;">
+                                <div class="journey-type-title" style="margin-bottom: 4px;">Going Right Now</div>
+                                <div class="journey-type-desc">Let others join you live</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="journey-type-card journey-card-planned" onclick="selectJourneyType('planned')" style="border: 2px solid var(--blue-500);">
+                        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
+                            <div style="width: 56px; height: 56px; background: var(--blue-500); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-2xl); box-shadow: var(--shadow-soft);">📍</div>
+                            <div style="flex: 1; text-align: left;">
+                                <div class="journey-type-title" style="margin-bottom: 4px;">Planning a Trip</div>
+                                <div class="journey-type-desc">Find people who want to go</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="journey-type-card journey-card-memory" onclick="selectJourneyType('memory')" style="border: 2px solid var(--mustard-500);">
+                        <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
+                            <div style="width: 56px; height: 56px; background: var(--mustard-500); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-2xl); box-shadow: var(--shadow-soft);">✨</div>
+                            <div style="flex: 1; text-align: left;">
+                                <div class="journey-type-title" style="margin-bottom: 4px;">Travelled Before</div>
+                                <div class="journey-type-desc">Share your experience</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="switchScenario('home')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Home</span>
+                </button>
+                <button class="nav-item">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Communities</span>
+                </button>
+                <button class="composer-btn">
+                    <svg class="icon-lg" style="color: white;" viewBox="0 0 24 24">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </button>
+                <button class="nav-item" onclick="switchScenario('map')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Map</span>
+                </button>
+                <button class="nav-item">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Profile</span>
+                </button>
+            </nav>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             SCENARIO 3: MAP TAB
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="scenario" id="scenario-map">
+            <header class="app-header" style="border-bottom: none; background: transparent; position: absolute; top: 0; left: 0; right: 0; z-index: 100;">
+                <div style="display: flex; background: var(--white); border-radius: var(--radius-full); padding: var(--space-xs); box-shadow: var(--shadow-soft);">
+                    <button class="header-btn" id="map-view-btn" style="background: var(--coral-500); color: var(--white);" onclick="toggleMapView('map')">
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" fill="currentColor"/>
+                        </svg>
+                        <span style="margin-left: 4px; font-size: var(--font-size-sm); font-weight: 600;">Map</span>
+                    </button>
+                    <button class="header-btn" id="list-view-btn" style="background: transparent;" onclick="toggleMapView('list')">
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        <span style="margin-left: 4px; font-size: var(--font-size-sm); font-weight: 600;">List</span>
+                    </button>
+                </div>
+                <button class="header-btn" style="background: var(--white); box-shadow: var(--shadow-soft);">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    </svg>
+                </button>
+            </header>
+            
+            <!-- Map View -->
+            <div class="scroll-content map-view-container" id="map-view" style="padding: 0; position: relative; background: linear-gradient(135deg, #E8F4FD 0%, #F0F7ED 50%, #FDF8E8 100%); padding-top: 80px;">
+                <!-- Map Background Pattern -->
+                <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0; opacity: 0.2;">
+                    <defs>
+                        <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--accent-tertiary)" stroke-width="0.5"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid-pattern)"/>
+                </svg>
+                
+                <!-- Destination Clusters -->
+                <div style="position: absolute; top: 120px; right: 60px; z-index: 10;">
+                    <div style="width: 56px; height: 56px; background: var(--coral-500); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--white); font-weight: 700; font-size: var(--font-size-lg); box-shadow: var(--shadow-float); animation: pulse-ring 2s ease-in-out infinite;">12</div>
+                    <div style="position: absolute; top: 64px; left: 50%; transform: translateX(-50%); background: var(--white); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); box-shadow: var(--shadow-soft); white-space: nowrap;">
+                        <div style="font-size: var(--font-size-xs); font-weight: 600;">North Ridge</div>
+                    </div>
+                </div>
+                
+                <div style="position: absolute; top: 260px; right: 100px; z-index: 10;">
+                    <div style="width: 44px; height: 44px; background: var(--blue-500); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--white); font-weight: 700; font-size: var(--font-size-base); box-shadow: var(--shadow-float);">8</div>
+                    <div style="position: absolute; top: 52px; left: 50%; transform: translateX(-50%); background: var(--white); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); box-shadow: var(--shadow-soft); white-space: nowrap;">
+                        <div style="font-size: var(--font-size-xs); font-weight: 600;">Downtown</div>
+                    </div>
+                </div>
+                
+                <div style="position: absolute; top: 360px; left: 80px; z-index: 10;">
+                    <div style="width: 36px; height: 36px; background: var(--green-500); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--white); font-weight: 700; font-size: var(--font-size-sm); box-shadow: var(--shadow-float);">5</div>
+                    <div style="position: absolute; top: 44px; left: 50%; transform: translateX(-50%); background: var(--white); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); box-shadow: var(--shadow-soft); white-space: nowrap;">
+                        <div style="font-size: var(--font-size-xs); font-weight: 600;">Beach</div>
+                    </div>
+                </div>
+                
+                <!-- Current Location -->
+                <div style="position: absolute; top: 450px; left: 50%; transform: translateX(-50%); z-index: 10;">
+                    <div style="width: 16px; height: 16px; background: var(--gray-900); border: 3px solid var(--white); border-radius: var(--radius-full); box-shadow: var(--shadow-float);"></div>
+                    <div style="position: absolute; top: -4px; left: -4px; width: 24px; height: 24px; background: var(--gray-900); border-radius: var(--radius-full); opacity: 0.2; animation: pulse-ring 1.5s ease-in-out infinite;"></div>
+                </div>
+                
+                <!-- Map Info Card -->
+                <div style="position: absolute; bottom: 20px; left: var(--space-md); right: var(--space-md); z-index: 10;">
+                    <div style="background: var(--white); border-radius: var(--radius-xl); padding: var(--space-md); box-shadow: var(--shadow-float);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm);">
+                            <div style="font-size: var(--font-size-md); font-weight: 700; color: var(--text-primary);">Live Movement</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">25 people moving</div>
+                        </div>
+                        <div style="display: flex; gap: var(--space-sm);">
+                            <div style="flex: 1; padding: var(--space-sm); background: var(--coral-50); border-radius: var(--radius-md); text-align: center;">
+                                <div style="font-size: var(--font-size-lg); font-weight: 700; color: var(--coral-500);">12</div>
+                                <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">Your Direction</div>
+                            </div>
+                            <div style="flex: 1; padding: var(--space-sm); background: var(--blue-50); border-radius: var(--radius-md); text-align: center;">
+                                <div style="font-size: var(--font-size-lg); font-weight: 700; color: var(--blue-500);">3</div>
+                                <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">Near You</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- List View (hidden by default) -->
+            <div class="scroll-content list-view-container" id="list-view" style="display: none; padding-top: 80px;">
+                <div style="margin-bottom: var(--space-lg);">
+                    <div style="font-size: var(--font-size-sm); font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-sm);">Very Close</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+                        <div class="card" style="display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md);">
+                            <div class="card-avatar" style="width: 48px; height: 48px;">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150" alt="User">
+                                <span class="avatar-badge">⭐</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary);">Rohan Mehta</div>
+                                <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">→ North Ridge • 2 min away</div>
+                            </div>
+                            <button class="action-btn primary">Hit</button>
+                        </div>
+                        
+                        <div class="card" style="display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md);">
+                            <div class="card-avatar" style="width: 48px; height: 48px;">
+                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150" alt="User">
+                                <span class="avatar-badge">🎓</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary);">Priya Kumar</div>
+                                <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">→ Beach Road • 5 min away</div>
+                            </div>
+                            <button class="action-btn primary">Hit</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div style="font-size: var(--font-size-sm); font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-sm);">Same Destination</div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+                        <div class="card" style="display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md);">
+                            <div class="card-avatar" style="width: 48px; height: 48px;">
+                                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150" alt="User">
+                                <span class="avatar-badge">👑</span>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: var(--text-primary);">Arjun Singh</div>
+                                <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">→ North Ridge • 12km ahead</div>
+                            </div>
+                            <button class="action-btn primary">Hit</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="switchScenario('home')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Home</span>
+                </button>
+                <button class="nav-item">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Communities</span>
+                </button>
+                <button class="composer-btn" onclick="switchScenario('composer')">
+                    <svg class="icon-lg" style="color: white;" viewBox="0 0 24 24">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </button>
+                <button class="nav-item active">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Map</span>
+                </button>
+                <button class="nav-item">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Profile</span>
+                </button>
+            </nav>
+        </div>
+        
+        <div class="scenario" id="scenario-communities">
+            <header class="app-header">
+                <div class="app-logo">Communities</div>
+                <button class="header-btn">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                </button>
+            </header>
+            <div class="scroll-content">
+                <div class="section-header">
+                    <h2 class="section-title">My Communities</h2>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); margin-bottom: var(--space-xl);">
+                    <div class="card" style="text-align: center; padding: var(--space-lg);">
+                        <div style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">🎓</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-xs);">DU North Campus</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">450 members</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--coral-500); margin-top: var(--space-xs);">12 active trips</div>
+                    </div>
+                    
+                    <div class="card" style="text-align: center; padding: var(--space-lg);">
+                        <div style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">🏔️</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-xs);">Spiti Explorers</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">1.2k members</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--coral-500); margin-top: var(--space-xs);">5 upcoming</div>
+                    </div>
+                    
+                    <div class="card" style="text-align: center; padding: var(--space-lg);">
+                        <div style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">🏖️</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-xs);">Goa Road Trippers</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">840 members</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--coral-500); margin-top: var(--space-xs);">8 upcoming</div>
+                    </div>
+                    
+                    <div class="card" style="text-align: center; padding: var(--space-lg);">
+                        <div style="font-size: var(--font-size-3xl); margin-bottom: var(--space-sm);">🌃</div>
+                        <div style="font-weight: 600; margin-bottom: var(--space-xs);">Night Owls BLR</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">320 members</div>
+                        <div style="font-size: var(--font-size-xs); color: var(--coral-500); margin-top: var(--space-xs);">Live now</div>
+                    </div>
+                </div>
+                
+                <div class="section-header">
+                    <h2 class="section-title">Discover</h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+                    <div class="card" style="display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md);">
+                        <div style="font-size: var(--font-size-2xl);">⛰️</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">Ladakh Riders</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">2.5k members</div>
+                        </div>
+                        <button class="action-btn">Join</button>
+                    </div>
+                    
+                    <div class="card" style="display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md);">
+                        <div style="font-size: var(--font-size-2xl);">🚂</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">Weekend Warriors</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">1.8k members</div>
+                        </div>
+                        <button class="action-btn">Join</button>
+                    </div>
+                </div>
+            </div>
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="switchScenario('home')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Home</span>
+                </button>
+                <button class="nav-item active">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Communities</span>
+                </button>
+                <button class="composer-btn" onclick="switchScenario('composer')">
+                    <svg class="icon-lg" style="color: white;" viewBox="0 0 24 24">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </button>
+                <button class="nav-item">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Map</span>
+                </button>
+                <button class="nav-item">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Profile</span>
+                </button>
+            </nav>
+        </div>
+        
+        <div class="scenario" id="scenario-profile">
+            <header class="app-header">
+                <div class="app-logo">Profile</div>
+                <button class="header-btn">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="19" cy="12" r="1"/>
+                        <circle cx="5" cy="12" r="1"/>
+                    </svg>
+                </button>
+            </header>
+            <div class="scroll-content">
+                <!-- Profile Hero -->
+                <div style="text-align: center; margin-bottom: var(--space-xl);">
+                    <div style="width: 96px; height: 96px; border-radius: var(--radius-full); overflow: hidden; margin: 0 auto var(--space-md); box-shadow: var(--shadow-float);">
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <h1 style="font-size: var(--font-size-xl); font-weight: 700; margin-bottom: var(--space-sm);">Priya Kumar</h1>
+                    <div style="display: flex; justify-content: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
+                        <span title="Campus Hero">⭐</span>
+                        <span title="Verified Student">🎓</span>
+                        <span title="Night Owl">🦉</span>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: var(--space-xl); font-size: var(--font-size-sm);">
+                        <div>
+                            <div style="font-size: var(--font-size-xl); font-weight: 700; color: var(--coral-500);">32</div>
+                            <div style="color: var(--text-secondary);">Journeys</div>
+                        </div>
+                        <div>
+                            <div style="font-size: var(--font-size-xl); font-weight: 700; color: var(--coral-500);">12</div>
+                            <div style="color: var(--text-secondary);">Connections</div>
+                        </div>
+                        <div>
+                            <div style="font-size: var(--font-size-xl); font-weight: 700; color: var(--coral-500);">4</div>
+                            <div style="color: var(--text-secondary);">Communities</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Badges Section -->
+                <div class="section-header">
+                    <h2 class="section-title">Badges</h2>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); margin-bottom: var(--space-xl);">
+                    <div class="card" style="text-align: center; padding: var(--space-md);">
+                        <div style="font-size: var(--font-size-2xl);">⭐</div>
+                        <div style="font-size: var(--font-size-xs); font-weight: 600; margin-top: var(--space-xs);">Campus Hero</div>
+                    </div>
+                    <div class="card" style="text-align: center; padding: var(--space-md);">
+                        <div style="font-size: var(--font-size-2xl);">🎓</div>
+                        <div style="font-size: var(--font-size-xs); font-weight: 600; margin-top: var(--space-xs);">Verified</div>
+                    </div>
+                    <div class="card" style="text-align: center; padding: var(--space-md);">
+                        <div style="font-size: var(--font-size-2xl);">🦉</div>
+                        <div style="font-size: var(--font-size-xs); font-weight: 600; margin-top: var(--space-xs);">Night Owl</div>
+                    </div>
+                </div>
+                
+                <!-- Journey History -->
+                <div class="section-header">
+                    <h2 class="section-title">Recent Journeys</h2>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: var(--space-md);">
+                    <div class="card" style="padding: var(--space-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-sm);">
+                            <div>
+                                <div style="font-weight: 600;">Koramangala → Beach Road</div>
+                                <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">2 days ago</div>
+                            </div>
+                            <span class="card-type-badge badge-live">Live</span>
+                        </div>
+                        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">12km • 25 min</div>
+                    </div>
+                    
+                    <div class="card" style="padding: var(--space-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-sm);">
+                            <div>
+                                <div style="font-weight: 600;">Delhi → Manali</div>
+                                <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">1 week ago</div>
+                            </div>
+                            <span class="card-type-badge badge-planned">Planned</span>
+                        </div>
+                        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">540km • 3 people joined</div>
+                    </div>
+                </div>
+            </div>
+            <nav class="bottom-nav">
+                <button class="nav-item" onclick="switchScenario('home')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Home</span>
+                </button>
+                <button class="nav-item" onclick="switchScenario('communities')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Communities</span>
+                </button>
+                <button class="composer-btn" onclick="switchScenario('composer')">
+                    <svg class="icon-lg" style="color: white;" viewBox="0 0 24 24">
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3"/>
+                    </svg>
+                </button>
+                <button class="nav-item" onclick="switchScenario('map')">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Map</span>
+                </button>
+                <button class="nav-item active">
+                    <span class="nav-icon">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4" fill="currentColor"/>
+                        </svg>
+                    </span>
+                    <span class="nav-label">Profile</span>
+                </button>
+            </nav>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             SCENARIO 6: WHILE RIDING
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="scenario" id="scenario-riding">
+            <header class="app-header" style="background: transparent; border: none; position: absolute; top: 0; left: 0; right: 0; z-index: 100;">
+                <button class="header-btn" style="background: var(--white); box-shadow: var(--shadow-soft);" onclick="switchScenario('home')">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div style="display: flex; gap: var(--space-sm);">
+                    <div style="background: var(--green-500); color: var(--white); padding: var(--space-xs) var(--space-md); border-radius: var(--radius-full); font-size: var(--font-size-sm); font-weight: 600; display: flex; align-items: center; gap: var(--space-xs); box-shadow: var(--shadow-soft);">
+                        <span style="width: 8px; height: 8px; background: var(--white); border-radius: var(--radius-full); animation: pulse-ring 1s ease-in-out infinite;"></span>
+                        Live
+                    </div>
+                </div>
+            </header>
+            
+            <div class="scroll-content riding-view-container" style="padding: 0; position: relative; background: linear-gradient(135deg, #E8F4FD 0%, #F0F7ED 50%, #FDF8E8 100%); padding-top: 80px;">
+                <!-- Map Pattern -->
+                <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0; opacity: 0.2;">
+                    <defs>
+                        <pattern id="grid-pattern-2" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--accent-tertiary)" stroke-width="0.5"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid-pattern-2)"/>
+                </svg>
+                
+                <!-- Active Route Path -->
+                <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0; z-index: 5;" viewBox="0 0 375 600" preserveAspectRatio="xMidYMid slice">
+                    <path d="M 187,500 Q 200,400 220,350 T 280,200" stroke="url(#activeRoute)" stroke-width="6" fill="none" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="activeRoute" x1="0%" y1="100%" x2="0%" y2="0%">
+                            <stop offset="0%" stop-color="var(--coral-500)"/>
+                            <stop offset="100%" stop-color="var(--blue-500)"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                
+                <!-- Destination Marker -->
+                <div style="position: absolute; top: 160px; right: 80px; z-index: 10;">
+                    <div style="width: 48px; height: 48px; background: var(--blue-500); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--white); box-shadow: var(--shadow-float);">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="currentColor"/>
+                            <circle cx="12" cy="10" r="3" fill="white"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Current Position (Animated) -->
+                <div style="position: absolute; top: 420px; left: 50%; transform: translateX(-50%); z-index: 10;">
+                    <div style="width: 24px; height: 24px; background: var(--coral-500); border: 4px solid var(--white); border-radius: var(--radius-full); box-shadow: var(--shadow-float);"></div>
+                    <div style="position: absolute; top: -8px; left: -8px; width: 40px; height: 40px; background: var(--coral-500); border-radius: var(--radius-full); opacity: 0.3; animation: pulse-ring 1.5s ease-in-out infinite;"></div>
+                </div>
+                
+                <!-- Journey Status Card -->
+                <div style="position: absolute; bottom: 20px; left: var(--space-md); right: var(--space-md); z-index: 10;">
+                    <div style="background: var(--white); border-radius: var(--radius-xl); padding: var(--space-lg); box-shadow: var(--shadow-float);">
+                        <!-- Route Info -->
+                        <div style="margin-bottom: var(--space-lg);">
+                            <div style="display: flex; gap: var(--space-md); margin-bottom: var(--space-md);">
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <div style="width: 10px; height: 10px; background: var(--coral-500); border-radius: var(--radius-full);"></div>
+                                    <div style="width: 2px; height: 32px; background: linear-gradient(to bottom, var(--coral-500), var(--blue-500));"></div>
+                                    <div style="width: 10px; height: 10px; background: var(--blue-500); border-radius: var(--radius-full);"></div>
+                                </div>
+                                <div style="flex: 1;">
+                                    <div style="margin-bottom: var(--space-md);">
+                                        <div style="font-size: var(--font-size-xs); color: var(--text-tertiary);">FROM</div>
+                                        <div style="font-weight: 600;">Koramangala</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: var(--font-size-xs); color: var(--text-tertiary);">TO</div>
+                                        <div style="font-weight: 600;">Beach Road</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: var(--space-lg); padding: var(--space-md); background: var(--gray-50); border-radius: var(--radius-md);">
+                                <div>
+                                    <div style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--coral-500);">15 min</div>
+                                    <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">ETA</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--blue-500);">2.3 km</div>
+                                    <div style="font-size: var(--font-size-xs); color: var(--text-secondary);">Remaining</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Safety Ribbon -->
+                        <div style="padding: var(--space-sm); background: var(--green-50); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+                            <div style="font-size: var(--font-size-sm); color: var(--green-500); text-align: center;">
+                                ✓ 3 close connections can see your location
+                            </div>
+                        </div>
+                        
+                        <!-- End Ride Button -->
+                        <button class="submit-btn" onclick="completeJourney()">
+                            End Journey
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Modal -->
+        <div class="modal-overlay" id="search-modal">
+            <div class="modal-sheet" style="height: 90vh; max-height: none;">
+                <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-lg);">
+                    <button class="header-btn" onclick="closeSearch()">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <input type="text" placeholder="Search places, people, trips..." class="form-input" style="flex: 1;">
+                </div>
+                
+                <div style="margin-bottom: var(--space-lg);">
+                    <div style="font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-sm);">Recent Searches</div>
+                    <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
+                        <div style="padding: var(--space-sm); cursor: pointer;">Spiti Valley</div>
+                        <div style="padding: var(--space-sm); cursor: pointer;">Campus Hikers community</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div style="font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-sm);">Trending Destinations</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
+                        <span style="padding: var(--space-sm) var(--space-md); background: var(--coral-50); color: var(--coral-600); border-radius: var(--radius-full); font-size: var(--font-size-sm);">🔥 North Ridge</span>
+                        <span style="padding: var(--space-sm) var(--space-md); background: var(--blue-50); color: var(--blue-500); border-radius: var(--radius-full); font-size: var(--font-size-sm);">🏔️ Spiti</span>
+                        <span style="padding: var(--space-sm) var(--space-md); background: var(--green-50); color: var(--green-500); border-radius: var(--radius-full); font-size: var(--font-size-sm);">🏖️ Goa</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hit Modal -->
+        <div class="modal-overlay" id="hit-modal">
+            <div class="modal-sheet">
+                <div class="modal-handle"></div>
+                <h2 class="modal-title">Connect with <span id="hit-modal-name">User</span>?</h2>
+                <p class="modal-subtitle">Hitchr is about meaningful connections. How would you like to interact?</p>
+                
+                <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+                    <button class="action-btn" style="width: 100%; justify-content: flex-start; padding: var(--space-md);" onclick="closeHitModal()">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                        </svg>
+                        Send a message
+                    </button>
+                    <button class="action-btn" style="width: 100%; justify-content: flex-start; padding: var(--space-md);" onclick="closeHitModal()">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                        </svg>
+                        Travel together next time
+                    </button>
+                    <button class="action-btn" style="width: 100%; justify-content: flex-start; padding: var(--space-md);" onclick="closeHitModal()">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        Just appreciate this journey
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Journey Complete Modal -->
+        <div class="modal-overlay" id="journey-complete-modal">
+            <div class="modal-sheet">
+                <div style="text-align: center; padding: var(--space-xl) 0;">
+                    <div style="font-size: 80px; margin-bottom: var(--space-md);">🎉</div>
+                    <h2 class="modal-title">Journey Complete!</h2>
+                    <p class="modal-subtitle">You made it safely</p>
+                    
+                    <div style="display: flex; gap: var(--space-lg); justify-content: center; margin: var(--space-xl) 0;">
+                        <div>
+                            <div style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--coral-500);">2.3 km</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Distance</div>
+                        </div>
+                        <div>
+                            <div style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--blue-500);">15 min</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">Time</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+                        <button class="submit-btn" onclick="closeJourneyComplete()">
+                            Done
+                        </button>
+                        <button class="action-btn" style="width: 100%;" onclick="closeJourneyComplete(); switchScenario('composer');">
+                            Share your experience
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script>
+        // ═══════════════════════════════════════════════════════════
+        // STATE MANAGEMENT
+        // ═══════════════════════════════════════════════════════════
+        let appState = {
+            theme: 'day',
+            activeScenario: 'home',
+            currentUser: {
+                name: 'You',
+                avatar: '',
+                badges: ['campus-hero', 'verified-student'],
+                journeys: 32
+            }
+        };
+        
+        // ═══════════════════════════════════════════════════════════
+        // THEME DETECTION
+        // ═══════════════════════════════════════════════════════════
+        function detectTheme() {
+            const hour = new Date().getHours();
+            return (hour >= 6 && hour < 18) ? 'day' : 'night';
+        }
+        
+        function initializeTheme() {
+            const theme = detectTheme();
+            appState.theme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        // SCENARIO SWITCHING
+        // ═══════════════════════════════════════════════════════════
+        function switchScenario(scenarioId) {
+            // Hide all scenarios
+            document.querySelectorAll('.scenario').forEach(s => s.classList.remove('active'));
+            
+            // Show selected scenario
+            const targetScenario = document.getElementById(`scenario-${scenarioId}`);
+            if (targetScenario) {
+                targetScenario.classList.add('active');
+                appState.activeScenario = scenarioId;
+            }
+            
+            // Update nav active states
+            updateNavStates(scenarioId);
+        }
+        
+        function updateNavStates(activeScenario) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // This is simplified - in real implementation would match nav items to scenarios
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        // MODAL HANDLERS
+        // ═══════════════════════════════════════════════════════════
+        function openSearch() {
+            document.getElementById('search-modal').classList.add('active');
+        }
+        
+        function closeSearch() {
+            document.getElementById('search-modal').classList.remove('active');
+        }
+        
+        function openHitModal(userName) {
+            document.getElementById('hit-modal-name').textContent = userName;
+            document.getElementById('hit-modal').classList.add('active');
+        }
+        
+        function closeHitModal() {
+            document.getElementById('hit-modal').classList.remove('active');
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        // JOURNEY COMPOSER
+        // ═══════════════════════════════════════════════════════════
+        function selectJourneyType(type) {
+            alert(`Selected journey type: ${type}. Compose form coming next!`);
+            // Will implement full compose form in next iteration
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        // MAP TOGGLE
+        // ═══════════════════════════════════════════════════════════
+        function toggleMapView(view) {
+            const mapView = document.getElementById('map-view');
+            const listView = document.getElementById('list-view');
+            const mapBtn = document.getElementById('map-view-btn');
+            const listBtn = document.getElementById('list-view-btn');
+            
+            if (view === 'map') {
+                mapView.style.display = 'block';
+                listView.style.display = 'none';
+                mapBtn.style.background = 'var(--coral-500)';
+                mapBtn.style.color = 'var(--white)';
+                listBtn.style.background = 'transparent';
+                listBtn.style.color = 'var(--text-primary)';
+            } else {
+                mapView.style.display = 'none';
+                listView.style.display = 'block';
+                listBtn.style.background = 'var(--coral-500)';
+                listBtn.style.color = 'var(--white)';
+                mapBtn.style.background = 'transparent';
+                mapBtn.style.color = 'var(--text-primary)';
+            }
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        // JOURNEY COMPLETE
+        // ═══════════════════════════════════════════════════════════
+        function completeJourney() {
+            document.getElementById('journey-complete-modal').classList.add('active');
+        }
+        
+        function closeJourneyComplete() {
+            document.getElementById('journey-complete-modal').classList.remove('active');
+        }
+        
+        // ═══════════════════════════════════════════════════════════
+        // INITIALIZE
+        // ═══════════════════════════════════════════════════════════
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeTheme();
+            console.log('Hitchr V2 initialized!', appState);
+        });
+        
+        // Update theme every hour
+        setInterval(() => {
+            const newTheme = detectTheme();
+            if (newTheme !== appState.theme) {
+                appState.theme = newTheme;
+                document.documentElement.setAttribute('data-theme', newTheme);
+                console.log('Theme switched to:', newTheme);
+            }
+        }, 60000); // Check every minute
+    </script>
+</body>
+</html>
+

@@ -1,294 +1,512 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+// src/screens/RideCompleteScreen.tsx
+// Modern Indian Design - Celebratory ride completion
 
-export default function RideCompleteScreen({ route, navigation }: any) {
-  const { pilot } = route.params;
-  const [rating, setRating] = React.useState(4);
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useUser } from '../contexts/UserContext';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { theme } from '../constants/theme';
 
-  const handleComplete = () => {
-    navigation.navigate('MainTabs');
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type ScreenRouteProp = RouteProp<RootStackParamList, 'RideComplete'>;
+
+export default function RideCompleteScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<ScreenRouteProp>();
+  const { tokensEarned, distance } = route.params;
+  const { refreshProfile } = useUser();
+  const [selectedRating, setSelectedRating] = useState(0);
+
+  useEffect(() => {
+    refreshProfile();
+  }, []);
+
+  const handleDone = () => {
+    navigation.navigate('Main');
   };
 
+  const distanceKm = (distance / 1000).toFixed(1);
+  const baseTokens = 10;
+  const bonusTokens = tokensEarned - baseTokens;
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.successIcon}>
-          <Text style={styles.checkmark}>✓</Text>
-        </View>
-        
-        <Text style={styles.title}>Trip Complete!</Text>
-        <Text style={styles.subtitle}>8.5 km • 24 mins</Text>
-        
-        <View style={styles.tokenCard}>
-          <View style={styles.tokenIconContainer}>
-            <Text style={styles.tokenIcon}>🪙</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <ScrollView 
+        contentContainerStyle={styles.content} 
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Success Header */}
+        <View style={styles.successHeader}>
+          <View style={styles.successBadge}>
+            <Text style={styles.successIcon}>✓</Text>
           </View>
-          <Text style={styles.tokenValue}>+15</Text>
-          <Text style={styles.tokenLabel}>Tokens Earned</Text>
-          <Text style={styles.bonusText}>+5 distance bonus included</Text>
+          <Text style={styles.title}>Ride Complete!</Text>
+          <Text style={styles.subtitle}>
+            {distanceKm} km • {Math.ceil(distance / 500)} mins
+          </Text>
         </View>
-        
+
+        {/* Token Earned Card */}
+        <View style={styles.tokenCard}>
+          <View style={styles.tokenGlow}>
+            <View style={styles.tokenCircle}>
+              <Text style={styles.tokenEmoji}>🪙</Text>
+            </View>
+          </View>
+          
+          <Text style={styles.tokenAmount}>+{tokensEarned}</Text>
+          <Text style={styles.tokenLabel}>Tokens Earned</Text>
+          
+          {bonusTokens > 0 && (
+            <View style={styles.bonusBadge}>
+              <Text style={styles.bonusText}>+{bonusTokens} distance bonus!</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Breakdown Card */}
+        <View style={styles.breakdownCard}>
+          <Text style={styles.breakdownTitle}>Earnings Breakdown</Text>
+          
+          <View style={styles.breakdownRow}>
+            <View style={styles.breakdownLeft}>
+              <Text style={styles.breakdownIcon}>🎯</Text>
+              <Text style={styles.breakdownLabel}>Base reward</Text>
+            </View>
+            <Text style={styles.breakdownValue}>+{baseTokens}</Text>
+          </View>
+          
+          {bonusTokens > 0 && (
+            <View style={styles.breakdownRow}>
+              <View style={styles.breakdownLeft}>
+                <Text style={styles.breakdownIcon}>🚀</Text>
+                <Text style={styles.breakdownLabel}>Distance bonus</Text>
+              </View>
+              <Text style={[styles.breakdownValue, styles.bonusValue]}>+{bonusTokens}</Text>
+            </View>
+          )}
+          
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <View style={styles.totalBadge}>
+              <Text style={styles.totalValue}>+{tokensEarned} 🪙</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Plate Collection Card */}
         <View style={styles.plateCard}>
           <View style={styles.plateLeft}>
-            <View style={styles.plateBox}>
-              <Text style={styles.plateCode}>KA-01</Text>
+            <View style={styles.plateCode}>
+              <Text style={styles.plateCodeText}>KA-01</Text>
             </View>
             <View>
               <Text style={styles.plateTitle}>New Plate!</Text>
-              <Text style={styles.plateCity}>Bangalore East</Text>
+              <Text style={styles.plateSubtitle}>Bangalore East</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.collectButton}>
             <Text style={styles.collectButtonText}>Collect</Text>
           </TouchableOpacity>
         </View>
-        
+
+        {/* Rating Section */}
         <View style={styles.ratingCard}>
-          <Text style={styles.ratingTitle}>Rate {pilot.name}</Text>
-          <View style={styles.stars}>
+          <Text style={styles.ratingTitle}>Rate your ride</Text>
+          <Text style={styles.ratingSubtitle}>How was your experience?</Text>
+          
+          <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((star) => (
-              <TouchableOpacity
-                key={star}
-                onPress={() => setRating(star)}
+              <TouchableOpacity 
+                key={star} 
+                style={[
+                  styles.starButton,
+                  selectedRating >= star && styles.starButtonActive
+                ]}
+                onPress={() => setSelectedRating(star)}
               >
                 <Text style={[
-                  styles.star,
-                  star <= rating && styles.starFilled
+                  styles.starText,
+                  selectedRating >= star && styles.starTextActive
                 ]}>
-                  ⭐
+                  ★
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          <View style={styles.tags}>
-            <TouchableOpacity style={styles.tag}>
-              <Text style={styles.tagText}>Safe</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.tag}>
-              <Text style={styles.tagText}>Friendly</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.tag}>
-              <Text style={styles.tagText}>Punctual</Text>
-            </TouchableOpacity>
-          </View>
+          
+          {selectedRating > 0 && (
+            <Text style={styles.ratingFeedback}>
+              {selectedRating >= 4 ? 'Awesome! Thanks for the feedback 🎉' : 
+               selectedRating >= 2 ? 'Thanks for the feedback!' : 
+               'Sorry to hear that. We\'ll improve!'}
+            </Text>
+          )}
         </View>
-        
-        <TouchableOpacity style={styles.shareButton}>
-          <Text style={styles.shareButtonText}>📝 Share Your Story</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.doneButton}
-          onPress={handleComplete}
-        >
-          <Text style={styles.doneButtonText}>Done</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+
+        {/* Actions */}
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.shareButton}>
+            <Text style={styles.shareIcon}>📝</Text>
+            <Text style={styles.shareButtonText}>Share Your Story</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+            <Text style={styles.doneButtonText}>Done</Text>
+            <Text style={styles.doneIcon}>→</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Stats Hint */}
+        <View style={styles.statsHint}>
+          <Text style={styles.statsHintText}>
+            Check your updated stats in Profile →
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
   },
   content: {
-    padding: 20,
-    alignItems: 'center',
+    padding: theme.spacing.lg,
   },
-  successIcon: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  
+  // Success Header
+  successHeader: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+    marginTop: theme.spacing.lg,
+  },
+  successBadge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: `${theme.colors.accent}20`,
+    borderWidth: 3,
+    borderColor: theme.colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 20,
+    marginBottom: theme.spacing.md,
   },
-  checkmark: {
-    fontSize: 48,
-    color: '#10B981',
+  successIcon: {
+    fontSize: 40,
+    color: theme.colors.accent,
+    fontWeight: '800',
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 6,
+    fontWeight: '800',
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748B',
-    marginBottom: 25,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
   },
+  
+  // Token Card
   tokenCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 25,
-    width: '100%',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xxl,
+    padding: theme.spacing.xl,
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    marginBottom: theme.spacing.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    ...theme.shadows.md,
   },
-  tokenIconContainer: {
-    width: 55,
-    height: 55,
-    borderRadius: 27.5,
-    backgroundColor: '#FBBF24',
+  tokenGlow: {
+    padding: 8,
+    borderRadius: 40,
+    backgroundColor: `${theme.colors.primary}20`,
+    marginBottom: theme.spacing.md,
+  },
+  tokenCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 3,
+    borderColor: theme.colors.borderStrong,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  tokenIcon: {
-    fontSize: 28,
+  tokenEmoji: {
+    fontSize: 32,
   },
-  tokenValue: {
-    fontSize: 40,
-    fontWeight: '700',
-    color: '#F59E0B',
-    marginBottom: 6,
+  tokenAmount: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
   },
   tokenLabel: {
     fontSize: 14,
-    color: '#64748B',
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  bonusBadge: {
+    backgroundColor: `${theme.colors.accent}20`,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.pill,
+    marginTop: theme.spacing.md,
   },
   bonusText: {
-    fontSize: 12,
-    color: '#10B981',
-    marginTop: 8,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.accent,
   },
-  plateCard: {
-    backgroundColor: '#FEF3C7',
+  
+  // Breakdown Card
+  breakdownCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: '#FBBF24',
-    borderRadius: 12,
-    padding: 16,
-    width: '100%',
+    borderColor: theme.colors.border,
+  },
+  breakdownTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing.md,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderLight,
+  },
+  breakdownLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  breakdownIcon: {
+    fontSize: 16,
+  },
+  breakdownLabel: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+  },
+  breakdownValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  bonusValue: {
+    color: theme.colors.accent,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  totalBadge: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+  },
+  totalValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.textOnPrimary,
+  },
+  
+  // Plate Card
+  plateCard: {
+    backgroundColor: `${theme.colors.primary}15`,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
   },
   plateLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  plateBox: {
-    width: 55,
-    height: 35,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   plateCode: {
+    backgroundColor: `${theme.colors.rider}20`,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.rider,
+  },
+  plateCodeText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#3B82F6',
+    fontWeight: '800',
+    color: theme.colors.rider,
   },
   plateTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
     marginBottom: 2,
   },
-  plateCity: {
+  plateSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: theme.colors.textSecondary,
   },
   collectButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: theme.colors.secondary,
     paddingHorizontal: 18,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
   },
   collectButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.textInverse,
   },
+  
+  // Rating Card
   ratingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    marginBottom: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   ratingTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 16,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginBottom: 2,
   },
-  stars: {
+  ratingSubtitle: {
+    fontSize: 13,
+    color: theme.colors.textTertiary,
+    marginBottom: theme.spacing.md,
+  },
+  starsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
   },
-  star: {
-    fontSize: 32,
-    opacity: 0.3,
-  },
-  starFilled: {
-    opacity: 1,
-  },
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  starButton: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  tag: {
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  starButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.borderStrong,
   },
-  tagText: {
-    fontSize: 12,
+  starText: {
+    fontSize: 24,
+    color: theme.colors.textTertiary,
+  },
+  starTextActive: {
+    color: theme.colors.textOnPrimary,
+  },
+  ratingFeedback: {
+    fontSize: 13,
+    color: theme.colors.accent,
     fontWeight: '600',
-    color: '#64748B',
+    marginTop: theme.spacing.md,
+  },
+  
+  // Actions
+  actions: {
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
   },
   shareButton: {
-    backgroundColor: '#3B82F6',
-    width: '100%',
-    padding: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+    paddingVertical: 16,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    gap: 10,
+  },
+  shareIcon: {
+    fontSize: 18,
   },
   shareButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.textPrimary,
   },
   doneButton: {
-    backgroundColor: '#FFFFFF',
-    width: '100%',
-    padding: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.secondary,
+    paddingVertical: 16,
+    borderRadius: theme.borderRadius.lg,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
+    borderColor: theme.colors.borderStrong,
+    gap: 8,
+    ...theme.shadows.magenta,
   },
   doneButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
+    fontWeight: '700',
+    color: theme.colors.textInverse,
+  },
+  doneIcon: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.textInverse,
+  },
+  
+  // Stats Hint
+  statsHint: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+  },
+  statsHintText: {
+    fontSize: 13,
+    color: theme.colors.textTertiary,
+    fontWeight: '500',
   },
 });

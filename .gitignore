@@ -3,6 +3,7 @@ dist/
 build/
 .env
 .env.*
+!.env.example
 *.log
 npm-debug.log*
 yarn-error.log*
@@ -16,3 +17,19 @@ coverage/
 .web-cache/
 hitch-app/.expo/
 backend/firebase-service-account.json
+
+# Flutter / Dart (recreate with flutter pub get)
+.flutter-sdk/
+.pub-cache/
+
+# Python (recreate with pip install -r requirements.txt)
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+.eggs/
+
+# Large binaries / installers (do not push)
+*.AppImage

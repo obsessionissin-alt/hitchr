@@ -5,7 +5,8 @@ const router = express.Router();
 // Import route modules
 const authRoutes = require('./auth');
 const userRoutes = require('./users');
-const pilotRoutes = require('./pilots');
+const locationRoutes = require('./location');
+const nearbyRoutes = require('./nearby');
 const rideRoutes = require('./rides');
 const tokenRoutes = require('./tokens');
 
@@ -21,8 +22,8 @@ router.get('/health', (req, res) => {
 // Mount routes
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
-router.use('/pilot', pilotRoutes);
-router.use('/nearby/pilots', pilotRoutes); // Legacy compatibility
+router.use('/location', locationRoutes);
+router.use('/nearby', nearbyRoutes);
 router.use('/rides', rideRoutes);
 router.use('/tokens', tokenRoutes);
 

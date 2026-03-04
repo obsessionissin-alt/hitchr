@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#FAFAFA">
+    <title>Hitchr</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        :root {
+            --bg: #FAFAFA;
+            --bg-card: #FFFFFF;
+            --bg-muted: #F3F4F6;
+            --text: #111827;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --accent: #E07A5F;
+            --accent-light: #FEF2F0;
+            --secondary: #3D5A80;
+            --secondary-light: #EBF0F5;
+            --success: #10B981;
+            --live: #EF4444;
+            --border: #E5E7EB;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-lg: 0 4px 12px rgba(0,0,0,0.12);
+            --font: 'Inter', -apple-system, system-ui, sans-serif;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        html, body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+        }
+        
+        /* App Container */
+        .app {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+        
+        .screen.active {
+            display: flex;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           FLOATING NAVBAR - Like Reference
+        ═════════════════════════════════════════════════════════════ */
+        .navbar {
+            position: fixed;
+            bottom: calc(var(--safe-bottom) + 20px);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #1F2937;
+            border-radius: var(--radius-full);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .nav-item {
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: transparent;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #9CA3AF;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-item:hover {
+            color: #FFFFFF;
+        }
+        
+        .nav-item.active {
+            background: #374151;
+            color: #FFFFFF;
+        }
+        
+        .nav-item svg {
+            width: 22px;
+            height: 22px;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           HOME SCREEN
+        ═════════════════════════════════════════════════════════════ */
+        .home-screen {
+            background: var(--bg);
+        }
+        
+        /* Search Header */
+        .search-header {
+            padding: calc(var(--safe-top) + 16px) 20px 12px;
+            background: var(--bg);
+        }
+        
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            padding: 12px 16px;
+            box-shadow: var(--shadow);
+        }
+        
+        .search-bar input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-family: var(--font);
+            font-size: 15px;
+            outline: none;
+            color: var(--text);
+        }
+        
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .search-bar svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        
+        .search-action {
+            width: 36px;
+            height: 36px;
+            background: var(--secondary);
+            border: none;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            margin: -6px -6px -6px 0;
+        }
+        
+        /* Scrollable Content */
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 100px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Category Pills */
+        .pills {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .pills::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .pill:hover {
+            border-color: var(--accent);
+        }
+        
+        .pill.active {
+            background: #2D5A3D;
+            border-color: #2D5A3D;
+            color: white;
+        }
+        
+        /* Map Preview Card */
+        .map-preview {
+            margin: 8px 20px 20px;
+            background: linear-gradient(135deg, #4A90B8 0%, #6BA8CA 50%, #89C4DE 100%);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .map-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='80' cy='20' r='30' fill='white' fill-opacity='0.15'/%3E%3Ccircle cx='90' cy='50' r='20' fill='white' fill-opacity='0.1'/%3E%3C/svg%3E");
+            background-size: contain;
+        }
+        
+        .map-preview-header {
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 4px;
+        }
+        
+        .map-preview-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .map-preview-subtitle {
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 16px;
+        }
+        
+        .map-preview-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: white;
+            color: var(--secondary);
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .map-preview-cta svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* Section */
+        .section {
+            padding: 0 20px 24px;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .section-link {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        /* Feed Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-full);
+            object-fit: cover;
+        }
+        
+        .avatar-sm {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .user-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .badge {
+            display: inline-flex;
+            padding: 3px 8px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .badge-live {
+            background: #FEE2E2;
+            color: var(--live);
+        }
+        
+        .badge-plan {
+            background: var(--secondary-light);
+            color: var(--secondary);
+        }
+        
+        /* Route Display */
+        .route {
+            display: flex;
+            gap: 14px;
+            padding: 14px;
+            background: var(--bg-muted);
+            border-radius: var(--radius);
+            margin-bottom: 14px;
+        }
+        
+        .route-line {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding-top: 4px;
+        }
+        
+        .route-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: var(--radius-full);
+        }
+        
+        .route-dot.from {
+            background: var(--accent);
+        }
+        
+        .route-dot.to {
+            background: var(--secondary);
+        }
+        
+        .route-connector {
+            width: 2px;
+            height: 24px;
+            background: linear-gradient(var(--accent), var(--secondary));
+        }
+        
+        .route-info {
+            flex: 1;
+        }
+        
+        .route-point {
+            margin-bottom: 10px;
+        }
+        
+        .route-point:last-of-type {
+            margin-bottom: 0;
+        }
+        
+        .route-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .route-place {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .route-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 18px;
+            border-radius: var(--radius-full);
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #C66A50;
+        }
+        
+        .btn-ghost {
+            background: var(--bg-muted);
+            color: var(--text-secondary);
+        }
+        
+        .card-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: var(--bg-muted);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           MAP SCREEN
+        ═════════════════════════════════════════════════════════════ */
+        .map-screen {
+            background: linear-gradient(180deg, #E8EEF4 0%, #DDE6EF 100%);
+        }
+        
+        .map-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            padding: calc(var(--safe-top) + 12px) 20px 0;
+        }
+        
+        .map-header-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-btn {
+            width: 44px;
+            height: 44px;
+            background: var(--bg-card);
+            border: none;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            color: var(--text);
+        }
+        
+        .map-search-bar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-card);
+            padding: 12px 16px;
+            border-radius: var(--radius-full);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .map-search-bar input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-family: var(--font);
+            font-size: 15px;
+            outline: none;
+        }
+        
+        .map-search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: var(--radius-full);
+            padding: 4px;
+            margin-top: 12px;
+            box-shadow: var(--shadow-lg);
+            width: fit-content;
+        }
+        
+        .toggle-btn {
+            padding: 8px 20px;
+            border: none;
+            background: none;
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .toggle-btn.active {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        /* Map Area */
+        .map-area {
+            flex: 1;
+            position: relative;
+        }
+        
+        .map-grid {
+            position: absolute;
+            inset: 0;
+            opacity: 0.3;
+            background-image: 
+                linear-gradient(rgba(61, 90, 128, 0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(61, 90, 128, 0.12) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        /* Map Markers */
+        .marker {
+            position: absolute;
+            z-index: 10;
+            cursor: pointer;
+        }
+        
+        .marker-cluster {
+            width: 48px;
+            height: 48px;
+            background: var(--accent);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.2s ease;
+        }
+        
+        .marker-cluster:hover {
+            transform: scale(1.1);
+        }
+        
+        .marker-cluster.blue {
+            background: var(--secondary);
+        }
+        
+        .marker-cluster.gold {
+            background: #D4A373;
+        }
+        
+        .marker-label {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 6px;
+            padding: 4px 10px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: var(--shadow);
+        }
+        
+        /* Current Location */
+        .my-location {
+            position: absolute;
+            bottom: 220px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .my-dot {
+            width: 18px;
+            height: 18px;
+            background: #111827;
+            border: 4px solid white;
+            border-radius: var(--radius-full);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .my-pulse {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #111827;
+            border-radius: var(--radius-full);
+            opacity: 0.2;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse-ring 2s ease-out infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.3; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+        
+        /* Map Bottom Card */
+        .map-bottom-card {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .map-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .map-stats {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .map-stat {
+            flex: 1;
+            text-align: center;
+            padding: 12px 8px;
+            background: var(--bg-muted);
+            border-radius: var(--radius);
+        }
+        
+        .map-stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .map-stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        /* List View */
+        .list-view {
+            display: none;
+            flex-direction: column;
+            padding: 140px 20px 100px;
+            overflow-y: auto;
+            background: var(--bg);
+        }
+        
+        .list-view.active {
+            display: flex;
+        }
+        
+        .map-area.hidden {
+            display: none;
+        }
+        
+        .list-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .person-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        .person-info {
+            flex: 1;
+        }
+        
+        .person-name {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .person-route {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        .person-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            background: var(--bg-muted);
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+        }
+        
+        .tag.mutual {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+        
+        .tag.community {
+            background: var(--secondary-light);
+            color: var(--secondary);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           COMPOSER SCREEN
+        ═════════════════════════════════════════════════════════════ */
+        .composer-screen {
+            background: var(--bg);
+        }
+        
+        .composer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: calc(var(--safe-top) + 12px) 20px 12px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        
+        .composer-title {
+            font-size: 17px;
+            font-weight: 700;
+        }
+        
+        .composer-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 20px 100px;
+        }
+        
+        .composer-question {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 32px;
+            line-height: 1.3;
+        }
+        
+        .journey-options {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        
+        .journey-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .journey-option:hover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+        
+        .journey-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .journey-icon.live {
+            background: #FEE2E2;
+        }
+        
+        .journey-icon.plan {
+            background: var(--secondary-light);
+        }
+        
+        .journey-icon.memory {
+            background: #FEF3C7;
+        }
+        
+        .journey-text {
+            flex: 1;
+        }
+        
+        .journey-text h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .journey-text p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           PROFILE SCREEN
+        ═════════════════════════════════════════════════════════════ */
+        .profile-screen {
+            background: var(--bg);
+        }
+        
+        .profile-header {
+            padding: calc(var(--safe-top) + 20px) 20px 24px;
+            background: linear-gradient(180deg, var(--secondary-light) 0%, var(--bg) 100%);
+        }
+        
+        .profile-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-full);
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .profile-name {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .profile-handle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+        
+        .profile-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: var(--bg-card);
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: var(--shadow);
+        }
+        
+        .profile-stats {
+            display: flex;
+            gap: 16px;
+            padding: 18px;
+            background: var(--bg-card);
+            margin: 0 20px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+        }
+        
+        .profile-stat {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .profile-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .profile-stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        .profile-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 0 100px;
+        }
+        
+        .journey-item {
+            display: flex;
+            gap: 14px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .journey-date {
+            width: 48px;
+            text-align: center;
+        }
+        
+        .journey-day {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .journey-month {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .journey-details {
+            flex: 1;
+        }
+        
+        .journey-route-text {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .journey-meta-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           SEARCH SCREEN
+        ═════════════════════════════════════════════════════════════ */
+        .search-screen {
+            background: var(--bg);
+        }
+        
+        .search-header {
+            padding: calc(var(--safe-top) + 12px) 20px 12px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .search-header-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .search-full-bar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-muted);
+            padding: 12px 16px;
+            border-radius: var(--radius-full);
+        }
+        
+        .search-full-bar input {
+            flex: 1;
+            border: none;
+            background: none;
+            font-family: var(--font);
+            font-size: 15px;
+            outline: none;
+        }
+        
+        .search-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        
+        .search-tab {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: var(--radius-full);
+            transition: all 0.2s ease;
+        }
+        
+        .search-tab.active {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .search-results {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+        
+        .community-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        .community-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius);
+            background: var(--bg-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .community-info {
+            flex: 1;
+        }
+        
+        .community-name {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .community-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        /* Utility */
+        .icon {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+        
+        .empty-state p {
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- ═══════════════════════════════════════════════════════════
+             HOME SCREEN
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="screen home-screen active" id="home">
+            <div class="search-header">
+                <div class="search-bar" onclick="showScreen('search')">
+                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input type="text" placeholder="what're you looking for?" readonly>
+                    <button class="search-action">
+                        <svg class="icon" viewBox="0 0 24 24" style="width: 18px; height: 18px;"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="scroll-content">
+                <!-- Category Pills -->
+                <div class="pills">
+                    <div class="pill active">🔥 discover</div>
+                    <div class="pill">🏔️ mountains</div>
+                    <div class="pill">🏖️ beaches</div>
+                    <div class="pill">🌃 city</div>
+                    <div class="pill">☕ café</div>
+                </div>
+                
+                <!-- Map Preview Card -->
+                <div class="map-preview" onclick="showScreen('map')">
+                    <div class="map-preview-header">live movement</div>
+                    <div class="map-preview-title">25 people</div>
+                    <div class="map-preview-subtitle">moving near you right now</div>
+                    <button class="map-preview-cta">
+                        View map
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+                
+                <!-- Feed Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <span class="section-title">Trips being planned</span>
+                        <button class="section-link">See all</button>
+                    </div>
+                    
+                    <!-- Card 1 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <img class="avatar" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" alt="">
+                            <div class="user-info">
+                                <div class="user-name">Arjun Singh</div>
+                                <div class="user-meta">
+                                    <span class="badge badge-plan">Planning</span>
+                                    <span>Aug 15-20</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="route">
+                            <div class="route-line">
+                                <div class="route-dot from"></div>
+                                <div class="route-connector"></div>
+                                <div class="route-dot to"></div>
+                            </div>
+                            <div class="route-info">
+                                <div class="route-point">
+                                    <div class="route-label">FROM</div>
+                                    <div class="route-place">Delhi</div>
+                                </div>
+                                <div class="route-point">
+                                    <div class="route-label">TO</div>
+                                    <div class="route-place">Manali</div>
+                                </div>
+                                <div class="route-meta">
+                                    <span>540 km</span>
+                                    <span>•</span>
+                                    <span>6 interested</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-actions">
+                            <button class="btn btn-primary">I'm interested</button>
+                            <button class="icon-btn">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Card 2 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <img class="avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" alt="">
+                            <div class="user-info">
+                                <div class="user-name">Priya Kumar</div>
+                                <div class="user-meta">
+                                    <span class="badge badge-live">Live</span>
+                                    <span>5 min ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="route">
+                            <div class="route-line">
+                                <div class="route-dot from"></div>
+                                <div class="route-connector"></div>
+                                <div class="route-dot to"></div>
+                            </div>
+                            <div class="route-info">
+                                <div class="route-point">
+                                    <div class="route-label">FROM</div>
+                                    <div class="route-place">Koramangala</div>
+                                </div>
+                                <div class="route-point">
+                                    <div class="route-label">TO</div>
+                                    <div class="route-place">Beach Road</div>
+                                </div>
+                                <div class="route-meta">
+                                    <span>12 km</span>
+                                    <span>•</span>
+                                    <span>25 min</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-actions">
+                            <button class="btn btn-primary">Join ride</button>
+                            <button class="icon-btn">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             MAP SCREEN
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="screen map-screen" id="map">
+            <div class="map-header">
+                <div class="map-header-row">
+                    <button class="back-btn" onclick="showScreen('home')">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <div class="map-search-bar">
+                        <svg class="icon" style="color: var(--text-muted);" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        <input type="text" placeholder="Search destinations...">
+                    </div>
+                </div>
+                <div class="view-toggle">
+                    <button class="toggle-btn active" onclick="toggleMapView('map')">Map</button>
+                    <button class="toggle-btn" onclick="toggleMapView('list')">List</button>
+                </div>
+            </div>
+            
+            <!-- Map View -->
+            <div class="map-area" id="map-view">
+                <div class="map-grid"></div>
+                
+                <div class="marker" style="top: 180px; right: 50px;">
+                    <div class="marker-cluster">12</div>
+                    <div class="marker-label">North Ridge</div>
+                </div>
+                
+                <div class="marker" style="top: 300px; right: 100px;">
+                    <div class="marker-cluster blue">8</div>
+                    <div class="marker-label">Downtown</div>
+                </div>
+                
+                <div class="marker" style="top: 400px; left: 50px;">
+                    <div class="marker-cluster gold">5</div>
+                    <div class="marker-label">Beach</div>
+                </div>
+                
+                <div class="my-location">
+                    <div class="my-pulse"></div>
+                    <div class="my-dot"></div>
+                </div>
+                
+                <div class="map-bottom-card">
+                    <div class="map-card-title">Live movement near you</div>
+                    <div class="map-stats">
+                        <div class="map-stat">
+                            <div class="map-stat-value">12</div>
+                            <div class="map-stat-label">Your direction</div>
+                        </div>
+                        <div class="map-stat">
+                            <div class="map-stat-value">3</div>
+                            <div class="map-stat-label">Near you</div>
+                        </div>
+                        <div class="map-stat">
+                            <div class="map-stat-value">2</div>
+                            <div class="map-stat-label">Mutuals</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- List View -->
+            <div class="list-view" id="list-view">
+                <div class="list-section-title">Best matches for you</div>
+                
+                <div class="person-card">
+                    <img class="avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" alt="">
+                    <div class="person-info">
+                        <div class="person-name">Rohan Mehta</div>
+                        <div class="person-route">→ North Ridge • 2 km away</div>
+                        <div class="person-tags">
+                            <span class="tag mutual">DU North Campus</span>
+                            <span class="tag community">2 mutuals</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="padding: 8px 14px;">Join</button>
+                </div>
+                
+                <div class="person-card">
+                    <img class="avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" alt="">
+                    <div class="person-info">
+                        <div class="person-name">Priya Kumar</div>
+                        <div class="person-route">→ Beach Road • 5 min ahead</div>
+                        <div class="person-tags">
+                            <span class="tag mutual">Same route</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="padding: 8px 14px;">Join</button>
+                </div>
+                
+                <div class="list-section-title" style="margin-top: 24px;">From your communities</div>
+                
+                <div class="person-card">
+                    <img class="avatar" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" alt="">
+                    <div class="person-info">
+                        <div class="person-name">Arjun Singh</div>
+                        <div class="person-route">→ Manali • Planning Aug 15</div>
+                        <div class="person-tags">
+                            <span class="tag community">Spiti Explorers</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost" style="padding: 8px 14px;">View</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             COMPOSER SCREEN
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="screen composer-screen" id="composer">
+            <div class="composer-header">
+                <button class="icon-btn" onclick="showScreen('home')" style="background: none;">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+                <span class="composer-title">New Journey</span>
+                <div style="width: 40px;"></div>
+            </div>
+            
+            <div class="composer-content">
+                <div class="composer-question">Where are you headed?</div>
+                
+                <div class="journey-options">
+                    <div class="journey-option" onclick="selectJourneyType('live')">
+                        <div class="journey-icon live">🚗</div>
+                        <div class="journey-text">
+                            <h3>Going right now</h3>
+                            <p>Let others join your ride</p>
+                        </div>
+                    </div>
+                    
+                    <div class="journey-option" onclick="selectJourneyType('plan')">
+                        <div class="journey-icon plan">📍</div>
+                        <div class="journey-text">
+                            <h3>Planning a trip</h3>
+                            <p>Find people to travel with</p>
+                        </div>
+                    </div>
+                    
+                    <div class="journey-option" onclick="selectJourneyType('memory')">
+                        <div class="journey-icon memory">✨</div>
+                        <div class="journey-text">
+                            <h3>Share a memory</h3>
+                            <p>Inspire future travelers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             PROFILE SCREEN
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="screen profile-screen" id="profile">
+            <div class="profile-header">
+                <div class="profile-top">
+                    <img class="profile-avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200" alt="">
+                    <button class="icon-btn">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                    </button>
+                </div>
+                <div class="profile-name">Priya Kumar</div>
+                <div class="profile-handle">@priya.travels</div>
+                <div class="profile-badges">
+                    <span class="profile-badge">⭐ Campus Hero</span>
+                    <span class="profile-badge">🎓 Verified</span>
+                    <span class="profile-badge">🦉 Night Owl</span>
+                </div>
+            </div>
+            
+            <div class="profile-stats">
+                <div class="profile-stat">
+                    <div class="profile-stat-value">32</div>
+                    <div class="profile-stat-label">Journeys</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-value">12</div>
+                    <div class="profile-stat-label">Connections</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-value">4</div>
+                    <div class="profile-stat-label">Communities</div>
+                </div>
+            </div>
+            
+            <div class="profile-content">
+                <div class="section">
+                    <div class="section-header">
+                        <span class="section-title">Recent journeys</span>
+                    </div>
+                </div>
+                
+                <div class="journey-item">
+                    <div class="journey-date">
+                        <div class="journey-day">15</div>
+                        <div class="journey-month">Jan</div>
+                    </div>
+                    <div class="journey-details">
+                        <div class="journey-route-text">Koramangala → Beach Road</div>
+                        <div class="journey-meta-text">12 km • 25 min • Live ride</div>
+                    </div>
+                </div>
+                
+                <div class="journey-item">
+                    <div class="journey-date">
+                        <div class="journey-day">10</div>
+                        <div class="journey-month">Jan</div>
+                    </div>
+                    <div class="journey-details">
+                        <div class="journey-route-text">Delhi → Manali</div>
+                        <div class="journey-meta-text">540 km • 3 people • Planned trip</div>
+                    </div>
+                </div>
+                
+                <div class="journey-item">
+                    <div class="journey-date">
+                        <div class="journey-day">05</div>
+                        <div class="journey-month">Jan</div>
+                    </div>
+                    <div class="journey-details">
+                        <div class="journey-route-text">Mumbai → Lonavala</div>
+                        <div class="journey-meta-text">83 km • 2 hr • Memory shared</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             SEARCH SCREEN
+        ═════════════════════════════════════════════════════════════ -->
+        <div class="screen search-screen" id="search">
+            <div class="search-header">
+                <div class="search-header-row">
+                    <button class="icon-btn" onclick="showScreen('home')" style="background: none;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <div class="search-full-bar">
+                        <svg class="icon" style="color: var(--text-muted);" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                        <input type="text" placeholder="Search places, people, communities..." id="search-input" oninput="handleSearch(this.value)" autofocus>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="search-tabs">
+                <button class="search-tab active">All</button>
+                <button class="search-tab">Communities</button>
+                <button class="search-tab">People</button>
+                <button class="search-tab">Places</button>
+            </div>
+            
+            <div class="search-results" id="search-results">
+                <div class="empty-state">
+                    <p>Search for places like "Manali", "Delhi"<br>or people you know</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════
+             FLOATING NAVBAR
+        ═════════════════════════════════════════════════════════════ -->
+        <nav class="navbar" id="main-navbar">
+            <button class="nav-item active" data-screen="home" onclick="navigateTo('home')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            </button>
+            <button class="nav-item" data-screen="composer" onclick="navigateTo('composer')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+            </button>
+            <button class="nav-item" data-screen="profile" onclick="navigateTo('profile')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+        </nav>
+    </div>
+    
+    <script>
+        // Navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            // Show/hide navbar based on screen
+            const navbar = document.getElementById('main-navbar');
+            if (screenId === 'map' || screenId === 'search') {
+                navbar.style.display = 'none';
+            } else {
+                navbar.style.display = 'flex';
+            }
+        }
+        
+        function navigateTo(screenId) {
+            showScreen(screenId);
+            
+            // Update active state
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-screen="${screenId}"]`).classList.add('active');
+        }
+        
+        // Map View Toggle
+        function toggleMapView(view) {
+            const mapView = document.getElementById('map-view');
+            const listView = document.getElementById('list-view');
+            const toggleBtns = document.querySelectorAll('.toggle-btn');
+            
+            toggleBtns.forEach(btn => btn.classList.remove('active'));
+            
+            if (view === 'map') {
+                mapView.classList.remove('hidden');
+                listView.classList.remove('active');
+                toggleBtns[0].classList.add('active');
+            } else {
+                mapView.classList.add('hidden');
+                listView.classList.add('active');
+                toggleBtns[1].classList.add('active');
+            }
+        }
+        
+        // Composer
+        function selectJourneyType(type) {
+            const types = {
+                live: 'Going Right Now',
+                plan: 'Planning a Trip',
+                memory: 'Sharing a Memory'
+            };
+            alert(`${types[type]} selected!\n\nNext: Enter your route details.`);
+        }
+        
+        // Search
+        function handleSearch(query) {
+            const results = document.getElementById('search-results');
+            
+            if (query.length < 2) {
+                results.innerHTML = `
+                    <div class="empty-state">
+                        <p>Search for places like "Manali", "Delhi"<br>or people you know</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            results.innerHTML = `
+                <div class="list-section-title">Communities</div>
+                <div class="community-card">
+                    <div class="community-icon">🏔️</div>
+                    <div class="community-info">
+                        <div class="community-name">${query} Explorers</div>
+                        <div class="community-meta">1.2k members • 5 trips planned</div>
+                    </div>
+                    <button class="btn btn-ghost" style="padding: 8px 12px;">Join</button>
+                </div>
+                <div class="community-card">
+                    <div class="community-icon">🚗</div>
+                    <div class="community-info">
+                        <div class="community-name">${query} Road Trippers</div>
+                        <div class="community-meta">840 members • 3 trips planned</div>
+                    </div>
+                    <button class="btn btn-ghost" style="padding: 8px 12px;">Join</button>
+                </div>
+                
+                <div class="list-section-title" style="margin-top: 24px;">People going to ${query}</div>
+                <div class="person-card">
+                    <img class="avatar" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" alt="">
+                    <div class="person-info">
+                        <div class="person-name">Arjun Singh</div>
+                        <div class="person-route">Planning trip • Aug 15</div>
+                        <div class="person-tags">
+                            <span class="tag">6 interested</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="padding: 8px 12px;">View</button>
+                </div>
+                
+                <div class="list-section-title" style="margin-top: 24px;">Memories from ${query}</div>
+                <div class="card">
+                    <div class="card-header">
+                        <img class="avatar avatar-sm" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" alt="">
+                        <div class="user-info">
+                            <div class="user-name">Maya Sharma</div>
+                            <div class="user-meta">Visited 2 weeks ago</div>
+                        </div>
+                    </div>
+                    <p style="font-size: 14px; color: var(--text-secondary);">Amazing experience in ${query}! The local chai shops are a must visit...</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

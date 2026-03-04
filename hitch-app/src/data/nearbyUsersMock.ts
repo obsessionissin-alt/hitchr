@@ -1,0 +1,145 @@
+// src/data/nearbyUsersMock.ts
+// Static mock data for nearby users - loaded ONLY when withMocks=true
+// This file should NOT be imported directly into UI components
+
+import type { UserMarker } from '../types/userMarker';
+
+// Mock pilots for development/preview
+export const MOCK_PILOTS: Omit<UserMarker, 'distance'>[] = [
+  {
+    id: 'mock-pilot-1',
+    name: 'Rohit Kumar',
+    role: 'pilot',
+    avatar_url: null,
+    latitude: 30.3165,
+    longitude: 78.0322,
+    is_mock: true,
+    rating: 4.9,
+    total_rides: 342,
+    total_km: 2100,
+    vehicle_type: 'Sedan',
+    plate_number: 'UK-07-AB-1234',
+  },
+  {
+    id: 'mock-pilot-2',
+    name: 'Priya Sharma',
+    role: 'pilot',
+    avatar_url: null,
+    latitude: 30.3265,
+    longitude: 78.0422,
+    is_mock: true,
+    rating: 4.8,
+    total_rides: 256,
+    total_km: 1500,
+    vehicle_type: 'Hatchback',
+    plate_number: 'UK-07-CD-5678',
+  },
+  {
+    id: 'mock-pilot-3',
+    name: 'Amit Singh',
+    role: 'pilot',
+    avatar_url: null,
+    latitude: 30.3065,
+    longitude: 78.0222,
+    is_mock: true,
+    rating: 4.7,
+    total_rides: 189,
+    total_km: 1100,
+    vehicle_type: 'Bike',
+    plate_number: 'UK-07-EF-9012',
+  },
+  {
+    id: 'mock-pilot-4',
+    name: 'Sneha Patel',
+    role: 'pilot',
+    avatar_url: null,
+    latitude: 30.3365,
+    longitude: 78.0522,
+    is_mock: true,
+    rating: 4.9,
+    total_rides: 412,
+    total_km: 2800,
+    vehicle_type: 'SUV',
+    plate_number: 'UK-07-GH-3456',
+  },
+  {
+    id: 'mock-pilot-5',
+    name: 'Vikram Reddy',
+    role: 'pilot',
+    avatar_url: null,
+    latitude: 30.2965,
+    longitude: 78.0122,
+    is_mock: true,
+    rating: 4.6,
+    total_rides: 145,
+    total_km: 890,
+    vehicle_type: 'Sedan',
+    plate_number: 'UK-07-IJ-7890',
+  },
+];
+
+// Mock riders for development/preview
+export const MOCK_RIDERS: Omit<UserMarker, 'distance'>[] = [
+  {
+    id: 'mock-rider-1',
+    name: 'Ananya Gupta',
+    role: 'rider',
+    avatar_url: null,
+    latitude: 30.3200,
+    longitude: 78.0380,
+    is_mock: true,
+    rating: 4.8,
+    total_rides: 67,
+  },
+  {
+    id: 'mock-rider-2',
+    name: 'Vivek Joshi',
+    role: 'rider',
+    avatar_url: null,
+    latitude: 30.3100,
+    longitude: 78.0280,
+    is_mock: true,
+    rating: 4.6,
+    total_rides: 45,
+  },
+  {
+    id: 'mock-rider-3',
+    name: 'Meera Singh',
+    role: 'rider',
+    avatar_url: null,
+    latitude: 30.3300,
+    longitude: 78.0450,
+    is_mock: true,
+    rating: 4.9,
+    total_rides: 89,
+  },
+  {
+    id: 'mock-rider-4',
+    name: 'Raj Malhotra',
+    role: 'rider',
+    avatar_url: null,
+    latitude: 30.3050,
+    longitude: 78.0150,
+    is_mock: true,
+    rating: 4.5,
+    total_rides: 32,
+  },
+  {
+    id: 'mock-rider-5',
+    name: 'Kavita Rao',
+    role: 'rider',
+    avatar_url: null,
+    latitude: 30.3400,
+    longitude: 78.0550,
+    is_mock: true,
+    rating: 4.7,
+    total_rides: 56,
+  },
+];
+
+// Combined mock data - all nearby users
+export const ALL_MOCK_USERS: Omit<UserMarker, 'distance'>[] = [
+  ...MOCK_PILOTS,
+  ...MOCK_RIDERS,
+];
+

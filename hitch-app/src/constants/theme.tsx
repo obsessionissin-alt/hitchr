@@ -1,134 +1,233 @@
+// src/constants/theme.tsx
+// Modern Indian Design System - hitchr V2
+// Inspired by authentic Indian aesthetics, street culture, and Gen Z vibes
+
 export const theme = {
   colors: {
-    primary: '#F59E0B',
-    primaryDark: '#D97706',
-    primaryLight: '#FCD34D',
-    secondary: '#3B82F6',
-    secondaryDark: '#2563EB',
-    secondaryLight: '#60A5FA',
-    accent: '#FF6B6B',
-    tokenGold: '#FBBF24',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
-    background: '#F8FAFC',
-    backgroundSecondary: '#F1F5F9',
-    surface: '#FFFFFF',
-    cardBg: '#FFFFFF',
-    text: '#0F172A',
-    textDark: '#0F172A',
-    textSecondary: '#64748B',
-    textGray: '#64748B',
-    textTertiary: '#94A3B8',
-    textLight: '#94A3B8',
-    border: '#E2E8F0',
-    borderLight: '#F1F5F9',
-    overlay: 'rgba(0, 0, 0, 0.5)',
-    overlayLight: 'rgba(0, 0, 0, 0.3)',
+    // Primary "Spicy" Palette
+    primary: '#F2C94C',        // Rickshaw Yellow - warm, inviting, iconic
+    secondary: '#FF007A',      // Coconut Magenta - bold, youthful, energetic
+    accent: '#219653',         // Forest Green - natural, trustworthy, adventure
+    
+    // Neutrals with warmth
+    background: '#FCF9F1',     // Eggshell - warm off-white, less sterile
+    surface: '#FFFFFF',        // Pure white for cards
+    surfaceSecondary: '#F5F2E8', // Cream tint for layering
+    surfaceDark: '#1B1B1B',    // Carbon Black for dark surfaces
+    
+    // Text colors
+    textPrimary: '#1B1B1B',    // Carbon Black - strong, readable
+    textSecondary: '#5C5C5C',  // Charcoal - softer secondary
+    textTertiary: '#8B8B8B',   // Stone Grey - subtle hints
+    textInverse: '#FCF9F1',    // Eggshell on dark backgrounds
+    textOnPrimary: '#1B1B1B',  // Dark text on yellow
+    
+    // Semantic colors
+    success: '#219653',        // Forest Green
+    warning: '#F2994A',        // Mango Orange
+    danger: '#EB5757',         // Chilli Red
+    info: '#2D9CDB',           // Sky Blue
+    
+    // Border colors
+    border: '#E5E0D5',         // Warm grey border
+    borderLight: '#F0EDE4',    // Very light warm border
+    borderStrong: '#1B1B1B',   // Bold black border for emphasis
+    
+    // Role-specific colors (keeping hitchr identity)
+    pilot: '#F2C94C',          // Rickshaw Yellow
+    rider: '#2D9CDB',          // Sky Blue
+    
+    // Status & interaction
+    active: '#219653',         // Forest Green
+    inactive: '#8B8B8B',       // Stone Grey
+    
+    // Special effects
+    overlay: 'rgba(27, 27, 27, 0.6)',
+    glow: 'rgba(242, 201, 76, 0.3)',
+    magentaGlow: 'rgba(255, 0, 122, 0.15)',
+    
+    // Legacy support
     white: '#FFFFFF',
-    black: '#000000',
-    rider: '#3B82F6',
-    pilot: '#F59E0B',
+    black: '#1B1B1B',
+    text: '#1B1B1B',
+    error: '#EB5757',
   },
+  
+  // Spacing system (8px base grid)
   spacing: {
+    xxs: 2,
     xs: 4,
     sm: 8,
     md: 16,
     lg: 24,
     xl: 32,
     xxl: 48,
+    xxxl: 64,
   },
+  
+  // Border radius - more rounded for friendly feel
   borderRadius: {
-    sm: 4,
-    md: 8,
-    lg: 12,
-    xl: 16,
-    xxl: 20,
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
+    pill: 50,
     full: 9999,
   },
+  
+  // Font sizes
   fontSize: {
+    xxs: 10,
     xs: 12,
     sm: 14,
     base: 16,
+    md: 16,
     lg: 18,
     xl: 20,
     xxl: 24,
     xxxl: 32,
-    huge: 48,
+    display: 40,
+    hero: 48,
   },
+  
+  // Font weights
   fontWeight: {
-    regular: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
-    extrabold: '800',
+    normal: '400' as const,
+    medium: '500' as const,
+    semibold: '600' as const,
+    bold: '700' as const,
+    black: '900' as const,
   },
+  
+  // Typography presets
+  typography: {
+    // Display/Hero text - for big moments
+    hero: {
+      fontSize: 48,
+      fontWeight: '900' as const,
+      letterSpacing: -1,
+      lineHeight: 52,
+    },
+    // Page titles
+    title: {
+      fontSize: 32,
+      fontWeight: '700' as const,
+      letterSpacing: -0.5,
+      lineHeight: 38,
+    },
+    // Section headers
+    heading: {
+      fontSize: 24,
+      fontWeight: '700' as const,
+      letterSpacing: -0.3,
+      lineHeight: 30,
+    },
+    // Card titles, emphasized text
+    subheading: {
+      fontSize: 18,
+      fontWeight: '600' as const,
+      letterSpacing: 0,
+      lineHeight: 24,
+    },
+    // Body text
+    body: {
+      fontSize: 16,
+      fontWeight: '400' as const,
+      letterSpacing: 0,
+      lineHeight: 24,
+    },
+    // Small body text
+    bodySmall: {
+      fontSize: 14,
+      fontWeight: '400' as const,
+      letterSpacing: 0,
+      lineHeight: 20,
+    },
+    // Labels, badges
+    label: {
+      fontSize: 12,
+      fontWeight: '600' as const,
+      letterSpacing: 0.5,
+      lineHeight: 16,
+    },
+    // Tiny text, captions
+    caption: {
+      fontSize: 10,
+      fontWeight: '500' as const,
+      letterSpacing: 0.3,
+      lineHeight: 14,
+    },
+  },
+  
+  // Shadows - warmer, softer
   shadows: {
-    sm: {
-      shadowColor: '#000',
+    none: {
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
+    },
+    xs: {
+      shadowColor: '#1B1B1B',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
+      shadowOpacity: 0.04,
       shadowRadius: 2,
       elevation: 1,
     },
-    md: {
-      shadowColor: '#000',
+    sm: {
+      shadowColor: '#1B1B1B',
       shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    md: {
+      shadowColor: '#1B1B1B',
+      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      shadowRadius: 12,
+      elevation: 4,
     },
     lg: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 5,
-    },
-    xl: {
-      shadowColor: '#000',
+      shadowColor: '#1B1B1B',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
+      shadowOpacity: 0.12,
+      shadowRadius: 20,
       elevation: 8,
     },
+    // Colored shadows for CTAs
+    glow: {
+      shadowColor: '#F2C94C',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    magenta: {
+      shadowColor: '#FF007A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 6,
+    },
   },
+  
+  // Animation durations
   animation: {
     fast: 150,
-    normal: 300,
-    slow: 500,
+    normal: 250,
+    slow: 400,
+    spring: {
+      damping: 15,
+      stiffness: 150,
+    },
   },
 };
 
-// Export individual parts for destructuring imports
-export const { colors, spacing, borderRadius, fontSize, fontWeight, shadows, animation } = theme;
+// Export individual pieces for convenience
+export const { colors, spacing, borderRadius, shadows, typography, fontSize, fontWeight } = theme;
 
-// Export typography as an alias for fontSize + fontWeight
-export const typography = {
-  ...fontSize,
-  ...fontWeight,
-  sizes: fontSize,
-  weights: fontWeight,
-};
-
-// Backward compatibility - direct access
-export const {
-  primary,
-  primaryDark,
-  secondary,
-  accent,
-  tokenGold,
-  success,
-  warning,
-  error,
-  background,
-  cardBg,
-  textDark,
-  textGray,
-  textLight,
-  border,
-  overlay,
-  white,
-  black,
-} = theme.colors;
+export type Theme = typeof theme;

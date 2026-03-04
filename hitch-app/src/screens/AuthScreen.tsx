@@ -1,370 +1,497 @@
 // src/screens/AuthScreen.tsx
-import React, { useState, useEffect, useRef } from 'react';
+// Modern Indian Design - Raw, authentic, Gen Z vibes
+
+import React, { useState } from 'react';
 import {
   View,
   Text,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
   Alert,
-  Animated,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { useAuth } from '../store/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
+import { theme } from '../constants/theme';
+import { DEV_MODE } from '../constants/config';
 
 export default function AuthScreen() {
-  console.log('🔐 AuthScreen component rendering');
-  
-  // Get everything from context
-  const { 
-    sendOTP, 
-    verifyOTP, 
-    loading, 
-    error,
-    authStep,       // 'phone' or 'otp' from context
-    tempPhone,      // Phone number from context
-    setTempPhone,   // Set phone number in context
-    setAuthStep,    // Set step in context
-  } = useAuth();
-
-  console.log('📋 AuthScreen state - step:', authStep, 'loading:', loading);
-
-  // Only OTP is local state (doesn't need to survive re-renders)
+  const { signIn } = useAuth();
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
+  const [devUsername, setDevUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
 
-  // Animate on mount
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: Platform.OS !== 'web', // Native driver not supported on web
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: Platform.OS !== 'web',
-      }),
-    ]).start();
-  }, []);
-
-  // Animate when step changes
-  useEffect(() => {
-    slideAnim.setValue(50);
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 300,
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
-  }, [authStep]);
-
-  const handleSendOTP = async (e?: any) => {
-    // Prevent form submission on web
-    if (e?.preventDefault) {
-      e.preventDefault();
-    }
-
-    if (!tempPhone || tempPhone.length < 10) {
-      Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+  const handleSendOTP = async () => {
+    if (!phoneNumber || phoneNumber.length < 10) {
+      Alert.alert('Error', 'Please enter a valid phone number');
       return;
     }
 
     try {
-      await sendOTP(tempPhone);
-      // State change happens in AuthContext now
-      console.log('✅ OTP sent, step should change to otp');
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send OTP');
+      setIsLoading(true);
+
+      if (DEV_MODE) {
+        setStep('otp');
+        Alert.alert('Dev Mode', 'Use OTP: 123456 to continue');
+      } else {
+        const { auth } = require('../config/firebase');
+        const { signInWithPhoneNumber } = require('firebase/auth');
+        
+        const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+        const confirmation = await signInWithPhoneNumber(auth, formattedPhone);
+        (window as any).confirmationResult = confirmation;
+        setStep('otp');
+        Alert.alert('Success', 'OTP sent to your phone number');
+      }
+    } catch (error: any) {
+      console.error('Send OTP error:', error);
+      Alert.alert('Error', error.message || 'Failed to send OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
-  
+
   const handleVerifyOTP = async () => {
     if (!otp || otp.length !== 6) {
-      Alert.alert('Error', 'Please enter a valid 6-digit OTP');
+      Alert.alert('Error', 'Please enter the 6-digit OTP');
       return;
     }
-    
+
     try {
-      await verifyOTP(tempPhone, otp);
-      // Navigation handled by AppNavigator
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Invalid OTP'); 
-      setOtp('');
+      setIsLoading(true);
+
+      if (DEV_MODE) {
+        if (otp === '123456') {
+          const username = devUsername.trim() || phoneNumber.slice(-4);
+          const mockToken = 'dev_mock_token_' + username;
+          await signIn(mockToken);
+        } else {
+          Alert.alert('Error', 'Invalid OTP. Use 123456 in dev mode');
+        }
+      } else {
+        const confirmationResult = (window as any).confirmationResult;
+        if (!confirmationResult) {
+          throw new Error('No confirmation result found');
+        }
+
+        const userCredential = await confirmationResult.confirm(otp);
+        const idToken = await userCredential.user.getIdToken();
+        await signIn(idToken);
+      }
+    } catch (error: any) {
+      console.error('Verify OTP error:', error);
+      Alert.alert('Error', error.message || 'Invalid OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Logo Area */}
-        <View style={styles.header}>
-          <Animated.View style={styles.logoContainer}>
-            <Text style={styles.logo}>🚗</Text>
-            <Text style={styles.logoText}>HITCH</Text>
-          </Animated.View>
-          <Text style={styles.tagline}>Community Ride Sharing</Text>
-        </View>
-
-        {/* Auth Form */}
-        <View style={styles.form}>
-        {authStep === 'phone' ? (
-          <>
-            <Text style={styles.title}>Enter your phone number</Text>
-            <Text style={styles.subtitle}>We'll send you a verification code</Text>
-
-            <View style={styles.phoneInput}>
-              <View style={styles.countryCodeContainer}>
-                <Text style={styles.countryCode}>+91</Text>
-              </View>
-              <TextInput
-                style={styles.input}
-                placeholder="1234567890"
-                placeholderTextColor="#94A3B8"
-                keyboardType="phone-pad"
-                maxLength={10}
-                value={tempPhone}
-                onChangeText={setTempPhone}
-                autoFocus
-                editable={!loading}
-              />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.content}
+        >
+          {/* Dev Mode Banner */}
+          {DEV_MODE && (
+            <View style={styles.devBanner}>
+              <Text style={styles.devText}>DEV MODE</Text>
             </View>
+          )}
 
-            {error && <Text style={styles.error}>{error}</Text>}
+          {/* Tagline - Authentic Indian vibe */}
+          <View style={styles.taglineContainer}>
+            <Text style={styles.taglineHindi}>भीड़ में खोया रहता हूँ</Text>
+            <Text style={styles.taglineEnglish}>Lost in the crowd</Text>
+          </View>
 
-            <Text style={styles.hint}>
-              💡 Any number works - OTP is always 123456 in development
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logo}>
+                <Text style={styles.logoText}>H</Text>
+              </View>
+            </View>
+            
+            <Text style={styles.brandName}>hitchr</Text>
+            <Text style={styles.tagline}>Find your ride, find your tribe</Text>
+          </View>
+
+          {/* Visual Element - Rickshaw inspired */}
+          <View style={styles.visualElement}>
+            <View style={styles.stripeYellow} />
+            <View style={styles.stripeGreen} />
+            <View style={styles.stripeMagenta} />
+          </View>
+
+          {/* Form Section */}
+          <View style={styles.form}>
+            {step === 'phone' ? (
+              <>
+                <Text style={styles.formTitle}>Enter your number</Text>
+                <Text style={styles.formSubtitle}>
+                  We'll send you a code to verify
+                </Text>
+
+                <View style={styles.inputContainer}>
+                  <View style={styles.countryCode}>
+                    <Text style={styles.countryCodeText}>+91</Text>
+                  </View>
+                  <TextInput
+                    style={styles.phoneInput}
+                    placeholder="Phone number"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    keyboardType="phone-pad"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    editable={!isLoading}
+                    maxLength={10}
+                  />
+                </View>
+
+                {DEV_MODE && (
+                  <View style={styles.devSection}>
+                    <Text style={styles.devLabel}>Test Username</Text>
+                    <TextInput
+                      style={styles.devInput}
+                      placeholder="alice, bob, etc."
+                      placeholderTextColor={theme.colors.textTertiary}
+                      value={devUsername}
+                      onChangeText={setDevUsername}
+                      editable={!isLoading}
+                      autoCapitalize="none"
+                    />
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.button, isLoading && styles.buttonDisabled]}
+                  onPress={handleSendOTP}
+                  disabled={isLoading}
+                  activeOpacity={0.85}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color={theme.colors.textOnPrimary} />
+                  ) : (
+                    <Text style={styles.buttonText}>Send OTP</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.formTitle}>Enter OTP</Text>
+                <Text style={styles.formSubtitle}>
+                  Sent to +91 {phoneNumber}
+                </Text>
+
+                {DEV_MODE && (
+                  <View style={styles.devHint}>
+                    <Text style={styles.devHintText}>Use: 123456</Text>
+                  </View>
+                )}
+
+                <TextInput
+                  style={styles.otpInput}
+                  placeholder="• • • • • •"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  keyboardType="number-pad"
+                  value={otp}
+                  onChangeText={setOtp}
+                  editable={!isLoading}
+                  maxLength={6}
+                  textAlign="center"
+                />
+
+                <TouchableOpacity
+                  style={[styles.button, isLoading && styles.buttonDisabled]}
+                  onPress={handleVerifyOTP}
+                  disabled={isLoading}
+                  activeOpacity={0.85}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color={theme.colors.textOnPrimary} />
+                  ) : (
+                    <Text style={styles.buttonText}>Verify & Continue</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.backLink}
+                  onPress={() => {
+                    setStep('phone');
+                    setOtp('');
+                  }}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.backLinkText}>← Change number</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.terms}>
+              By continuing, you agree to our{' '}
+              <Text style={styles.termsLink}>Terms</Text>
+              {' & '}
+              <Text style={styles.termsLink}>Privacy Policy</Text>
             </Text>
-
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={(e) => handleSendOTP(e)}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Send OTP</Text>
-              )}
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <Text style={styles.title}>Enter verification code</Text>
-            <Text style={styles.subtitle}>Sent to +91{tempPhone}</Text>
-
-            <TextInput
-              style={styles.otpInput}
-              placeholder="123456"
-              placeholderTextColor="#94A3B8"
-              keyboardType="number-pad"
-              maxLength={6}
-              value={otp}
-              onChangeText={setOtp}
-              autoFocus
-              editable={!loading}
-            />
-
-            {error && <Text style={styles.error}>{error}</Text>}
-
-            <Text style={styles.hint}>
-              🔑 Development OTP: 123456
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleVerifyOTP}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Verify OTP</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => {
-                setAuthStep('phone');
-                setOtp('');
-              }}
-              disabled={loading}
-            >
-              <Text style={styles.linkText}>Change phone number</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            By continuing, you agree to our Terms & Privacy Policy
-          </Text>
-        </View>
-      </Animated.View>
-    </KeyboardAvoidingView>
+          </View>
+        </KeyboardAvoidingView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 20,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
-  header: {
+  devBanner: {
+    alignSelf: 'center',
+    backgroundColor: theme.colors.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    marginTop: theme.spacing.md,
+  },
+  devText: {
+    color: theme.colors.textInverse,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  taglineContainer: {
+    marginTop: theme.spacing.xl,
     alignItems: 'center',
-    marginBottom: 60,
   },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+  taglineHindi: {
+    fontSize: 16,
+    color: theme.colors.textTertiary,
+    fontStyle: 'italic',
+    letterSpacing: 0.5,
   },
-  logo: {
-    fontSize: 56,
-    marginRight: 12,
-  },
-  logoText: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#F59E0B',
+  taglineEnglish: {
+    fontSize: 12,
+    color: theme.colors.textTertiary,
+    marginTop: 4,
+    textTransform: 'uppercase',
     letterSpacing: 2,
   },
+  heroSection: {
+    alignItems: 'center',
+    marginTop: theme.spacing.xl,
+  },
+  logoContainer: {
+    marginBottom: theme.spacing.md,
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: theme.borderRadius.xl,
+    backgroundColor: theme.colors.primary,
+    borderWidth: 3,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...theme.shadows.glow,
+  },
+  logoText: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: theme.colors.textOnPrimary,
+  },
+  brandName: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: theme.colors.textPrimary,
+    letterSpacing: -1,
+  },
   tagline: {
-    fontSize: 16,
-    color: '#64748B',
+    fontSize: 15,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
+  visualElement: {
+    flexDirection: 'row',
+    height: 6,
+    marginVertical: theme.spacing.xl,
+    borderRadius: 3,
+    overflow: 'hidden',
+    gap: 4,
+  },
+  stripeYellow: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 3,
+  },
+  stripeGreen: {
+    flex: 1,
+    backgroundColor: theme.colors.accent,
+    borderRadius: 3,
+  },
+  stripeMagenta: {
+    flex: 1,
+    backgroundColor: theme.colors.secondary,
+    borderRadius: 3,
   },
   form: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+    flex: 1,
   },
-  title: {
+  formTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 8,
-    textAlign: 'center',
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
   },
-  subtitle: {
+  formSubtitle: {
     fontSize: 14,
-    color: '#64748B',
-    marginBottom: 30,
-    textAlign: 'center',
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
   },
-  phoneInput: {
+  inputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    marginBottom: 8,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-  },
-  countryCodeContainer: {
-    paddingVertical: 16,
-    paddingLeft: 16,
-    paddingRight: 12,
-    backgroundColor: '#F1F5F9',
-    borderRightWidth: 1,
-    borderRightColor: '#E2E8F0',
+    marginBottom: theme.spacing.md,
+    gap: 8,
   },
   countryCode: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0F172A',
+    width: 64,
+    height: 56,
+    backgroundColor: theme.colors.surfaceSecondary,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  input: {
+  countryCodeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+  },
+  phoneInput: {
     flex: 1,
+    height: 56,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.md,
     fontSize: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    color: '#0F172A',
+    fontWeight: '500',
+    color: theme.colors.textPrimary,
+    letterSpacing: 1,
+  },
+  devSection: {
+    marginBottom: theme.spacing.md,
+  },
+  devLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.accent,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  devInput: {
+    height: 48,
+    backgroundColor: `${theme.colors.accent}15`,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 2,
+    borderColor: theme.colors.accent,
+    paddingHorizontal: theme.spacing.md,
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.textPrimary,
+  },
+  devHint: {
+    backgroundColor: `${theme.colors.accent}15`,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: theme.borderRadius.md,
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  devHintText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.accent,
   },
   otpInput: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
+    height: 64,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingVertical: 20,
-    marginBottom: 8,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.lg,
+    fontSize: 28,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
     letterSpacing: 8,
-    color: '#0F172A',
-  },
-  hint: {
-    fontSize: 12,
-    color: '#10B981',
-    marginBottom: 20,
-    textAlign: 'center',
-    fontWeight: '600',
+    marginBottom: theme.spacing.lg,
   },
   button: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 12,
-    paddingVertical: 16,
+    height: 56,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 2,
+    borderColor: theme.colors.borderStrong,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    ...theme.shadows.glow,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: theme.colors.textOnPrimary,
   },
-  linkButton: {
+  backLink: {
     alignItems: 'center',
-    paddingVertical: 8,
+    marginTop: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
   },
-  linkText: {
+  backLinkText: {
     fontSize: 14,
-    color: '#3B82F6',
     fontWeight: '600',
-  },
-  error: {
-    fontSize: 14,
-    color: '#EF4444',
-    marginBottom: 12,
-    textAlign: 'center',
+    color: theme.colors.textSecondary,
   },
   footer: {
-    marginTop: 40,
-    alignItems: 'center',
+    marginTop: 'auto',
+    paddingTop: theme.spacing.xl,
   },
-  footerText: {
+  terms: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: theme.colors.textTertiary,
     textAlign: 'center',
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
 });

@@ -10,8 +10,14 @@
     "esModuleInterop": true,
     "jsx": "react-native",
     "lib": ["esnext", "dom"],
-    "target": "esnext"
+    "target": "esnext",
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "src/types/**/*"
+  ],
   "exclude": [
     "node_modules"
   ]

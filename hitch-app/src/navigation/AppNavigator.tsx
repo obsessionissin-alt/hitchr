@@ -1,197 +1,167 @@
 // src/navigation/AppNavigator.tsx
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../store/AuthContext';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
+
+// Contexts
+import { useAuth } from '../contexts/AuthContext';
 
 // Screens
 import AuthScreen from '../screens/AuthScreen';
 import MapScreen from '../screens/MapScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import PilotProfileModal from '../screens/PilotProfileModal';
-import RidePendingScreen from '../screens/RidePendingScreen';
-import RideActiveScreen from '../screens/RideActiveScreen';
+import ProfileModalScreen from '../screens/ProfileModalScreen';
+import NotificationSentScreen from '../screens/NotificationSentScreen';
+import OfferSentScreen from '../screens/OfferSentScreen';
+import ProximityConfirmScreen from '../screens/ProximityConfirmScreen';
+import RideLiveScreen from '../screens/RideLiveScreen';
 import RideCompleteScreen from '../screens/RideCompleteScreen';
-import TokenWalletScreen from '../screens/TokenWalletScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import WalletScreen from '../screens/WalletScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+// Types
+import type { UserMarker } from '../types/userMarker';
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Navigation Error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View style={styles.error}>
-          <Text style={styles.errorText}>Navigation Error</Text>
-          <Text style={styles.errorDetail}>{this.state.error?.message}</Text>
-        </View>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-// Loading Screen
-const LoadingScreen = () => {
-  console.log('🔄 LoadingScreen component rendering');
-  return (
-    <View style={styles.loading}>
-      <ActivityIndicator size="large" color="#F59E0B" />
-      <Text style={styles.loadingText}>Loading...</Text>
-    </View>
-  );
+// Type definitions
+export type RootStackParamList = {
+  Auth: undefined;
+  Main: undefined;
+  ProfileModal: { person: UserMarker; type: 'pilot' | 'rider' };
+  NotificationSent: { rideId: string; pilot: UserMarker };
+  OfferSent: { rideId: string; rider: UserMarker };
+  ProximityConfirm: { rideId: string };
+  RideLive: { rideId: string };
+  RideComplete: { rideId: string; tokensEarned: number; distance: number };
+  EditProfile: undefined;
+  Settings: undefined;
 };
 
-// Main tabs for authenticated users
+export type MainTabParamList = {
+  MapTab: undefined;
+  ProfileTab: undefined;
+  WalletTab: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+
+// Main Bottom Tab Navigator
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: '#F59E0B',
-        tabBarInactiveTintColor: '#94A3B8',
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E2E8F0',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+      screenOptions={({ route }: any) => ({
+        tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
+          let iconName: keyof typeof Ionicons.glyphMap;
+
+          if (route.name === 'MapTab') {
+            iconName = focused ? 'map' : 'map-outline';
+          } else if (route.name === 'ProfileTab') {
+            iconName = focused ? 'person' : 'person-outline';
+          } else if (route.name === 'WalletTab') {
+            iconName = focused ? 'wallet' : 'wallet-outline';
+          } else {
+            iconName = 'help-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
         },
+        tabBarActiveTintColor: '#f59e0b',
+        tabBarInactiveTintColor: '#94a3b8',
         headerShown: false,
-      }}
+      })}
     >
       <Tab.Screen
-        name="Map"
+        name="MapTab"
         component={MapScreen}
-        options={{
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="map" size={size} color={color} />
-          ),
-        }}
+        options={{ tabBarLabel: 'Map' }}
       />
       <Tab.Screen
-        name="Tokens"
-        component={TokenWalletScreen}
-        options={{
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="wallet" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
+        name="ProfileTab"
         component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="person" size={size} color={color} />
-          ),
-        }}
+        options={{ tabBarLabel: 'Profile' }}
+      />
+      <Tab.Screen
+        name="WalletTab"
+        component={WalletScreen}
+        options={{ tabBarLabel: 'Wallet' }}
       />
     </Tab.Navigator>
   );
 }
 
+// Main App Navigator
 export default function AppNavigator() {
-  const { user, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
-  console.log('📱 AppNavigator rendering - loading:', loading, 'user:', !!user);
-
-  // Show loading screen while checking auth
-  if (loading) {
-    console.log('⏳ Showing loading screen');
-    return <LoadingScreen />;
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
   }
 
-  console.log('🎯 Rendering main navigation - authenticated:', !!user);
-
   return (
-    <ErrorBoundary>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!user ? (
-            <>
-              {console.log('🔐 Rendering Auth screen')}
-              <Stack.Screen name="Auth" component={AuthScreen} />
-            </>
-          ) : (
-            <>
-              {console.log('✅ Rendering Main tabs')}
-              <Stack.Screen name="MainTabs" component={MainTabs} />
-              <Stack.Screen 
-                name="PilotProfile" 
-                component={PilotProfileModal}
-                options={{ presentation: 'modal' }}
-              />
-              <Stack.Screen name="RidePending" component={RidePendingScreen} />
-              <Stack.Screen name="RideActive" component={RideActiveScreen} />
-              <Stack.Screen name="RideComplete" component={RideCompleteScreen} />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </ErrorBoundary>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      {!isAuthenticated ? (
+        <Stack.Screen name="Auth" component={AuthScreen} />
+      ) : (
+        <>
+          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen
+            name="ProfileModal"
+            component={ProfileModalScreen}
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: '',
+              headerBackTitle: 'Back',
+            }}
+          />
+          <Stack.Screen
+            name="NotificationSent"
+            component={NotificationSentScreen}
+            options={{ headerShown: true, headerTitle: 'Notification Sent' }}
+          />
+          <Stack.Screen
+            name="OfferSent"
+            component={OfferSentScreen}
+            options={{ headerShown: true, headerTitle: 'Offer Sent' }}
+          />
+          <Stack.Screen
+            name="ProximityConfirm"
+            component={ProximityConfirmScreen}
+            options={{ headerShown: true, headerTitle: 'Confirm Ride' }}
+          />
+          <Stack.Screen
+            name="RideLive"
+            component={RideLiveScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="RideComplete"
+            component={RideCompleteScreen}
+            options={{ headerShown: false, gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{ headerShown: true, headerTitle: 'Edit Profile' }}
+          />
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ headerShown: true, headerTitle: 'Settings' }}
+          />
+        </>
+      )}
+    </Stack.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#64748B',
-  },
-  error: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FEE2E2',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#DC2626',
-    marginBottom: 8,
-  },
-  errorDetail: {
-    fontSize: 14,
-    color: '#991B1B',
-    textAlign: 'center',
-  },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  placeholderText: {
-    fontSize: 18,
-    color: '#64748B',
-  },
-});

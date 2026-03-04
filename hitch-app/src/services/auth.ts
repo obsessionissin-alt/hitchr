@@ -1,13 +1,11 @@
-import { initializeApp } from 'firebase/app';
 import {
-  getAuth,
   signInWithPhoneNumber,
   RecaptchaVerifier,
   ConfirmationResult,
   Auth,
 } from 'firebase/auth';
 import { Platform } from 'react-native';
-import { FIREBASE_CONFIG } from '../constants/config';
+import { auth } from '../config/firebase';
 import api from './api';
 
 class AuthService {
@@ -17,8 +15,8 @@ class AuthService {
   private recaptchaInitialized: boolean = false;
 
   constructor() {
-    const app = initializeApp(FIREBASE_CONFIG);
-    this.auth = getAuth(app);
+    // Use the shared Firebase auth instance
+    this.auth = auth;
   }
 
   // Initialize reCAPTCHA (web only)

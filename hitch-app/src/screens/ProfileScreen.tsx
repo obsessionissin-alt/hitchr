@@ -4,414 +4,452 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  Alert,
+  ScrollView,
+  Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../store/AuthContext';
+
+// Contexts
+import { useUser } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
+
+// Types
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { theme } from '../constants/theme';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
+  const { profile, updateAvailability } = useUser();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => logout(),
-        },
-      ]
-    );
+  const handlePilotToggle = async (value: boolean) => {
+    try {
+      await updateAvailability(value, profile?.isRiderAvailable || false);
+    } catch (error) {
+      console.error('Toggle pilot error:', error);
+    }
   };
 
-  const stats = [
-    { label: 'Total Rides', value: user?.stats?.totalRides || 0, icon: 'car' },
-    { label: 'Rating', value: user?.stats?.rating?.toFixed(1) || '0.0', icon: 'star' },
-    { label: 'KM Traveled', value: Math.round(user?.stats?.totalKm || 0), icon: 'map' },
-    { label: 'Tokens', value: user?.tokensBalance || 0, icon: 'wallet' },
-  ];
+  const handleRiderToggle = async (value: boolean) => {
+    try {
+      await updateAvailability(profile?.isPilotAvailable || false, value);
+    } catch (error) {
+      console.error('Toggle rider error:', error);
+    }
+  };
 
-  const badges = [
-    { icon: '🌟', title: 'Explorer', subtitle: 'First 10 rides' },
-    { icon: '🎖️', title: 'Trusted Rider', subtitle: '4.5+ rating' },
-  ];
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
+  if (!profile) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      {/* Header Banner */}
-      <View style={styles.banner}>
-        <View style={styles.avatarLarge}>
-          <Text style={styles.avatarLargeText}>
-            {user?.name?.charAt(0).toUpperCase() || 'U'}
-          </Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+              <Ionicons name="settings-outline" size={24} color={theme.colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        {/* Profile Banner */}
+        <View style={styles.banner}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{profile.name?.[0]?.toUpperCase() || 'U'}</Text>
+            </View>
+          </View>
+        </View>
+
         {/* User Info */}
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{user?.name || 'User'}</Text>
-          <Text style={styles.userRole}>
-            {(user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Rider')} • Member since{' '}
-            {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-          </Text>
-          <View style={styles.badgeRow}>
-            {badges.map((badge, index) => (
-              <View key={index} style={styles.badgePill}>
-                <Text style={styles.badgeIcon}>{badge.icon}</Text>
-                <Text style={styles.badgeText}>{badge.title}</Text>
-              </View>
-            ))}
+          <Text style={styles.name}>{profile.name || 'Anonymous'}</Text>
+          <Text style={styles.memberSince}>Member since {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : 'recently'}</Text>
+          <View style={styles.badges}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>🌟 Explorer</Text>
+            </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>🎖️ Trusted</Text>
+            </View>
           </View>
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Edit Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]}>
-            <Text style={styles.actionButtonTextSecondary}>Share</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          {stats.map((stat, index) => (
-            <View key={index} style={styles.statBox}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name={stat.icon as any} size={20} color="#F59E0B" />
-              </View>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Achievements */}
+        {/* Availability Toggles */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Achievements</Text>
-
-          <View style={styles.achievementCard}>
-            <View style={styles.achievementIcon}>
-              <Text style={styles.achievementEmoji}>🏆</Text>
+          <Text style={styles.sectionTitle}>Availability Status</Text>
+          
+          <View style={styles.toggleCard}>
+            <View style={styles.toggleInfo}>
+              <Ionicons name="car" size={20} color={theme.colors.pilot} />
+              <View style={styles.toggleText}>
+                <Text style={styles.toggleTitle}>Available as Pilot</Text>
+                <Text style={styles.toggleSubtitle}>Offer rides to others</Text>
+              </View>
             </View>
-            <View style={styles.achievementInfo}>
-              <Text style={styles.achievementTitle}>Century Club</Text>
-              <Text style={styles.achievementSubtitle}>Complete 100 rides</Text>
-            </View>
-            <View style={styles.achievementProgress}>
-              <Text style={styles.achievementProgressText}>
-                {user?.stats?.totalRides || 0}/100
-              </Text>
-            </View>
+            <Switch
+              value={profile.isPilotAvailable}
+              onValueChange={handlePilotToggle}
+              trackColor={{ false: '#e2e8f0', true: theme.colors.success }}
+              thumbColor="#fff"
+            />
           </View>
 
-          <View style={styles.progressBarContainer}>
-            <View
-              style={[
-                styles.progressBar,
-                { width: `${Math.min(((user?.stats?.totalRides || 0) / 100) * 100, 100)}%` },
-              ]}
+          <View style={styles.toggleCard}>
+            <View style={styles.toggleInfo}>
+              <Ionicons name="walk" size={20} color={theme.colors.rider} />
+              <View style={styles.toggleText}>
+                <Text style={styles.toggleTitle}>Available as Rider</Text>
+                <Text style={styles.toggleSubtitle}>Looking for rides</Text>
+              </View>
+            </View>
+            <Switch
+              value={profile.isRiderAvailable}
+              onValueChange={handleRiderToggle}
+              trackColor={{ false: '#e2e8f0', true: theme.colors.success }}
+              thumbColor="#fff"
             />
           </View>
         </View>
 
-        {/* Settings */}
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{profile.stats.totalRidesAsPilot + profile.stats.totalRidesAsRider}</Text>
+            <Text style={styles.statLabel}>Total Rides</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{profile.stats.rating?.toFixed(1) || '0.0'}</Text>
+            <Text style={styles.statLabel}>Rating</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{(profile.stats.totalKm / 1000).toFixed(0)}</Text>
+            <Text style={styles.statLabel}>KM</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{profile.stats.tokenBalance}</Text>
+            <Text style={styles.statLabel}>Tokens</Text>
+          </View>
+        </View>
+
+        {/* Role-specific Stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text style={styles.sectionTitle}>Ride Statistics</Text>
+          
+          <View style={styles.roleStats}>
+            <View style={styles.roleStat}>
+              <View style={styles.roleHeader}>
+                <Ionicons name="car" size={16} color={theme.colors.pilot} />
+                <Text style={styles.roleLabel}>As Pilot</Text>
+              </View>
+              <Text style={styles.roleValue}>{profile.stats.totalRidesAsPilot} rides</Text>
+            </View>
 
-          <TouchableOpacity style={styles.settingItem}>
-            <Ionicons name="notifications-outline" size={24} color="#64748B" />
-            <Text style={styles.settingText}>Notifications</Text>
-            <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Ionicons name="shield-checkmark-outline" size={24} color="#64748B" />
-            <Text style={styles.settingText}>Privacy & Safety</Text>
-            <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Ionicons name="help-circle-outline" size={24} color="#64748B" />
-            <Text style={styles.settingText}>Help & Support</Text>
-            <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#EF4444" />
-            <Text style={[styles.settingText, styles.logoutText]}>Logout</Text>
-            <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
-          </TouchableOpacity>
+            <View style={[styles.roleStat, styles.riderStat]}>
+              <View style={styles.roleHeader}>
+                <Ionicons name="walk" size={16} color={theme.colors.rider} />
+                <Text style={styles.roleLabel}>As Rider</Text>
+              </View>
+              <Text style={styles.roleValue}>{profile.stats.totalRidesAsRider} rides</Text>
+            </View>
+          </View>
         </View>
 
-        {/* App Info */}
-        <View style={styles.appInfo}>
-          <Text style={styles.appInfoText}>HITCH v1.0.0 (Demo Mode)</Text>
-          <Text style={styles.appInfoSubtext}>Made with ❤️ for riders & pilots</Text>
+        {/* Collected Plates */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Collected Plates</Text>
+          <View style={styles.platesGrid}>
+            <View style={styles.plateItem}>
+              <Text style={styles.plateCode}>KA-01</Text>
+            </View>
+            <View style={styles.plateItem}>
+              <Text style={styles.plateCode}>MH-12</Text>
+            </View>
+            <View style={[styles.plateItem, styles.emptyPlate]}>
+              <Text style={styles.emptyPlateText}>?</Text>
+            </View>
+            <View style={[styles.plateItem, styles.emptyPlate]}>
+              <Text style={styles.emptyPlateText}>?</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={{ height: 40 }} />
+        {/* Actions */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
+            <Text style={styles.actionButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: theme.colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#fff',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
   },
   banner: {
-    height: 140,
-    backgroundColor: 'linear-gradient(135deg, #F59E0B, #FBBF24)',
-    // background: '#F59E0B',
-    justifyContent: 'flex-end',
+    height: 120,
+    backgroundColor: theme.colors.primary,
     alignItems: 'center',
+    justifyContent: 'flex-end',
     paddingBottom: 50,
   },
-  avatarLarge: {
+  avatarContainer: {
+    marginBottom: -50,
+  },
+  avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#F8FAFC',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
-    position: 'absolute',
-    bottom: -50,
+    borderWidth: 5,
+    borderColor: theme.colors.background,
   },
-  avatarLargeText: {
-    fontSize: 40,
+  avatarText: {
+    fontSize: 48,
     fontWeight: '700',
-    color: '#F59E0B',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingTop: 60,
+    color: theme.colors.primary,
   },
   userInfo: {
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingTop: 60,
+    paddingBottom: 20,
   },
-  userName: {
-    fontSize: 24,
+  name: {
+    fontSize: 22,
     fontWeight: '700',
-    color: '#0F172A',
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
-  userRole: {
+  memberSince: {
     fontSize: 14,
-    color: '#64748B',
-    marginBottom: 12,
+    color: theme.colors.textSecondary,
+    marginBottom: 10,
   },
-  badgeRow: {
+  badges: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
     gap: 8,
   },
-  badgePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  badge: {
     backgroundColor: 'rgba(245, 158, 11, 0.15)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    gap: 6,
-  },
-  badgeIcon: {
-    fontSize: 14,
   },
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: theme.colors.pilot,
   },
-  actionButtons: {
-    flexDirection: 'row',
+  section: {
     paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 24,
+    paddingVertical: 20,
   },
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#F59E0B',
-    paddingVertical: 14,
-    borderRadius: 12,
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  toggleCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  actionButtonText: {
-    fontSize: 15,
+  toggleInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  toggleText: {
+    flex: 1,
+  },
+  toggleTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.textPrimary,
+    marginBottom: 2,
   },
-  actionButtonSecondary: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E2E8F0',
-  },
-  actionButtonTextSecondary: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#64748B',
+  toggleSubtitle: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
   },
   statsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
     gap: 12,
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    marginBottom: 20,
   },
-  statBox: {
+  statCard: {
     flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
+    backgroundColor: '#fff',
+    padding: 15,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FEF3C7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 4,
+    color: theme.colors.pilot,
+    marginBottom: 5,
   },
   statLabel: {
     fontSize: 11,
-    color: '#64748B',
+    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+  roleStats: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 16,
+  roleStat: {
+    flex: 1,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
   },
-  achievementCard: {
+  riderStat: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+  },
+  roleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 6,
+    marginBottom: 8,
   },
-  achievementIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FEF3C7',
+  roleLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  roleValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  platesGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  plateItem: {
+    flex: 1,
+    aspectRatio: 1.5,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderWidth: 1,
+    borderColor: theme.colors.secondary,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  achievementEmoji: {
+  emptyPlate: {
+    backgroundColor: theme.colors.borderLight,
+    borderColor: theme.colors.border,
+    borderStyle: 'dashed',
+  },
+  plateCode: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.secondary,
+  },
+  emptyPlateText: {
     fontSize: 24,
+    color: theme.colors.textTertiary,
   },
-  achievementInfo: {
-    flex: 1,
+  actions: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
   },
-  achievementTitle: {
+  actionButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 16,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginBottom: 12,
+    ...theme.shadows.md,
+  },
+  actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 4,
+    color: '#fff',
   },
-  achievementSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
+  signOutButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    borderRadius: 25,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: theme.colors.border,
   },
-  achievementProgress: {
-    paddingHorizontal: 12,
-  },
-  achievementProgressText: {
-    fontSize: 14,
+  signOutButtonText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#F59E0B',
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#F59E0B',
-    borderRadius: 4,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  settingText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#0F172A',
-    marginLeft: 12,
-  },
-  logoutText: {
-    color: '#EF4444',
-  },
-  appInfo: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  appInfoText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginBottom: 4,
-  },
-  appInfoSubtext: {
-    fontSize: 11,
-    color: '#CBD5E1',
+    color: theme.colors.danger,
   },
 });

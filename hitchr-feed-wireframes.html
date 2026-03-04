@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitchr Feed Wireframes - Social Movement Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --coral: #FF6B6B;
+            --charcoal: #2C2C2C;
+            --offwhite: #F8F8F8;
+            --blue: #4A90E2;
+            --green: #4CAF50;
+            --purple: #9C27B0;
+            --orange: #FF9800;
+            --red: #FF5252;
+            --electric-blue: #00B0FF;
+            --amber: #FFC107;
+            --gray-100: #F5F5F5;
+            --gray-300: #E0E0E0;
+            --gray-500: #9E9E9E;
+            --gray-700: #616161;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .phone-frame {
+            background: white;
+            border-radius: 40px;
+            padding: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .phone-frame:hover {
+            transform: translateY(-5px);
+        }
+
+        .phone-notch {
+            width: 120px;
+            height: 24px;
+            background: var(--charcoal);
+            border-radius: 0 0 12px 12px;
+            margin: 0 auto 8px;
+        }
+
+        .screen {
+            background: white;
+            border-radius: 28px;
+            overflow: hidden;
+            height: 720px;
+            position: relative;
+        }
+
+        .screen-title {
+            text-align: center;
+            margin-top: 15px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: white;
+            border-bottom: 1px solid var(--gray-300);
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--charcoal);
+            letter-spacing: 0.5px;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            font-size: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--coral);
+            color: white;
+            border-radius: 10px;
+            font-size: 10px;
+            padding: 2px 6px;
+            font-weight: 600;
+        }
+
+        /* Story Bar */
+        .story-bar {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            overflow-x: auto;
+            background: white;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .story-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .story-circle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .story-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--coral), var(--orange));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 20px;
+            position: relative;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .story-avatar::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(135deg, var(--coral), var(--blue));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        .story-avatar.live::before {
+            background: linear-gradient(135deg, var(--red), var(--orange));
+            animation: pulse 2s infinite;
+        }
+
+        .story-avatar.add {
+            background: var(--gray-100);
+            color: var(--gray-500);
+            font-size: 32px;
+        }
+
+        .story-avatar.add::before {
+            display: none;
+        }
+
+        .story-name {
+            font-size: 11px;
+            color: var(--gray-700);
+            font-weight: 500;
+            max-width: 64px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .live-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--red);
+            color: white;
+            border-radius: 8px;
+            font-size: 8px;
+            padding: 2px 6px;
+            font-weight: 600;
+            border: 2px solid white;
+        }
+
+        /* Feed Content */
+        .feed-content {
+            height: 580px;
+            overflow-y: auto;
+            background: var(--gray-100);
+        }
+
+        .feed-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .feed-content::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 2px;
+        }
+
+        /* Feed Cards */
+        .feed-card {
+            background: white;
+            margin-bottom: 12px;
+            padding: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .card-user-info {
+            flex: 1;
+        }
+
+        .card-username {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--charcoal);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .card-meta {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .card-badge {
+            font-size: 14px;
+        }
+
+        .card-menu {
+            font-size: 20px;
+            color: var(--gray-500);
+            cursor: pointer;
+        }
+
+        /* Journey Story Card */
+        .journey-image {
+            width: 100%;
+            height: 240px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .journey-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.6));
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .card-caption {
+            font-size: 14px;
+            color: var(--charcoal);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .card-stats {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: space-around;
+            padding-top: 12px;
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--gray-700);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            color: var(--coral);
+            transform: scale(1.05);
+        }
+
+        .action-btn .icon {
+            font-size: 20px;
+        }
+
+        /* Live Activity Card */
+        .live-activity-card {
+            background: linear-gradient(135deg, var(--red), var(--orange));
+            color: white;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.3);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .activity-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .mini-map {
+            width: 100%;
+            height: 120px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .activity-cta {
+            background: white;
+            color: var(--coral);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Trip Cluster Card */
+        .trip-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .trip-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--orange), var(--coral));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .trip-info {
+            flex: 1;
+        }
+
+        .trip-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--charcoal);
+        }
+
+        .trip-dates {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .trip-details {
+            background: var(--gray-100);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .trip-stat {
+            font-size: 13px;
+            color: var(--gray-700);
+            margin-bottom: 4px;
+        }
+
+        .interest-btn {
+            background: var(--blue);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Community Highlight Card */
+        .community-cover {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+        }
+
+        .community-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--charcoal);
+            margin-bottom: 8px;
+        }
+
+        .community-stats {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+        }
+
+        .join-btn {
+            background: var(--green);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Achievement Card */
+        .achievement-card {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: var(--charcoal);
+        }
+
+        .achievement-icon {
+            font-size: 64px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .achievement-text {
+            text-align: center;
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .achievement-name {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .congratulate-btn {
+            background: white;
+            color: var(--orange);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            background: white;
+            border-top: 1px solid var(--gray-300);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            color: var(--gray-500);
+            transition: all 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--coral);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        /* Story Fullscreen Modal */
+        .story-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: black;
+            z-index: 100;
+            display: none;
+        }
+
+        .story-modal.active {
+            display: block;
+        }
+
+        .story-content {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+        }
+
+        .story-progress {
+            display: flex;
+            gap: 4px;
+            padding: 8px 12px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            animation: progress 3s linear;
+        }
+
+        @keyframes progress {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+
+        .story-user-info {
+            position: absolute;
+            top: 20px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .story-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            margin-right: 8px;
+        }
+
+        .story-username {
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .story-close {
+            margin-left: auto;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .story-media {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .footer-note {
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-top: 40px;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .screens-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 Hitchr Feed</h1>
+            <p>Social-First Movement Platform - Feed Wireframes</p>
+        </div>
+
+        <div class="screens-grid">
+            <!-- Screen 1: Feed Home with Story Bar -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="header-bar">
+                        <div class="logo">HITCHR</div>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔍</div>
+                            <div class="icon-btn">
+                                🔔
+                                <span class="notification-badge">23</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="story-bar">
+                        <div class="story-circle">
+                            <div class="story-avatar add">+</div>
+                            <div class="story-name">Your Story</div>
+                        </div>
+                        <div class="story-circle">
+                            <div class="story-avatar">A</div>
+                            <div class="story-name">Alice</div>
+                        </div>
+                        <div class="story-circle">
+                            <div class="story-avatar" style="background: linear-gradient(135deg, var(--green), var(--blue));">D</div>
+                            <div class="story-name">David</div>
+                        </div>
+                        <div class="story-circle">
+                            <div class="story-avatar live" style="background: linear-gradient(135deg, var(--purple), var(--pink));">
+                                S
+                                <div class="live-indicator">LIVE</div>
+                            </div>
+                            <div class="story-name">Sarah</div>
+                        </div>
+                        <div class="story-circle">
+                            <div class="story-avatar" style="background: linear-gradient(135deg, var(--orange), var(--red));">🏫</div>
+                            <div class="story-name">DU Campus</div>
+                        </div>
+                        <div class="story-circle">
+                            <div class="story-avatar live" style="background: linear-gradient(135deg, var(--red), var(--orange));">
+                                🔴
+                                <div class="live-indicator">LIVE</div>
+                            </div>
+                            <div class="story-name">Live Now</div>
+                        </div>
+                    </div>
+
+                    <div class="feed-content">
+                        <!-- Journey Story Card -->
+                        <div class="feed-card">
+                            <div class="card-header">
+                                <div class="card-avatar">A</div>
+                                <div class="card-user-info">
+                                    <div class="card-username">
+                                        Alice Kumar
+                                        <span class="card-badge">🌟</span>
+                                    </div>
+                                    <div class="card-meta">2 hours ago</div>
+                                </div>
+                                <div class="card-menu">⋮</div>
+                            </div>
+
+                            <div class="journey-image">
+                                <div style="font-size: 64px;">🌄</div>
+                                <div class="journey-overlay">
+                                    📍 Koramangala → Nandi Hills
+                                </div>
+                            </div>
+
+                            <div class="card-caption">
+                                Best drive ever! Caught the most amazing sunset. Thanks David for the company! 🚗✨
+                            </div>
+
+                            <div class="card-stats">
+                                <div class="stat-item">📏 42 km</div>
+                                <div class="stat-item">⏱️ 1h 12m</div>
+                                <div class="stat-item">🌱 0.9 kg CO₂ saved</div>
+                            </div>
+
+                            <div class="card-actions">
+                                <div class="action-btn">
+                                    <span class="icon">❤️</span>
+                                    <span>24</span>
+                                </div>
+                                <div class="action-btn">
+                                    <span class="icon">💬</span>
+                                    <span>8</span>
+                                </div>
+                                <div class="action-btn">
+                                    <span class="icon">⚡</span>
+                                    <span>12</span>
+                                </div>
+                                <div class="action-btn">
+                                    <span class="icon">📤</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Activity Card -->
+                        <div class="feed-card live-activity-card">
+                            <div class="live-badge">
+                                <div class="live-dot"></div>
+                                HAPPENING NOW
+                            </div>
+                            <div class="activity-title">
+                                12 people heading to Whitefield Tech Park
+                            </div>
+                            <div class="mini-map">
+                                [Mini Map with Live Avatars]
+                            </div>
+                            <div class="activity-cta">
+                                Join Them →
+                            </div>
+                        </div>
+
+                        <!-- Trip Cluster Card -->
+                        <div class="feed-card">
+                            <div class="trip-header">
+                                <div class="trip-avatar">S</div>
+                                <div class="trip-info">
+                                    <div class="trip-title">Spiti Road Trip</div>
+                                    <div class="trip-dates">Sarah Mehta • June 15-22</div>
+                                </div>
+                            </div>
+
+                            <div class="card-caption">
+                                Planning an epic high-altitude adventure! Looking for fellow explorers to join 🏔️
+                            </div>
+
+                            <div class="trip-details">
+                                <div class="trip-stat">👥 12 interested • 4 committed</div>
+                                <div class="trip-stat">🚗 2 cars available</div>
+                                <div class="trip-stat">📅 7 days • ₹15,000/person</div>
+                            </div>
+
+                            <div class="interest-btn">
+                                I'm Interested
+                            </div>
+                        </div>
+
+                        <!-- Pull to load more -->
+                        <div style="text-align: center; padding: 20px; color: var(--gray-500); font-size: 13px;">
+                            Pull to refresh...
+                        </div>
+                    </div>
+
+                    <div class="bottom-nav">
+                        <div class="nav-item active">
+                            <div class="nav-icon">🏠</div>
+                            <div class="nav-label">Feed</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-icon">🗺️</div>
+                            <div class="nav-label">Map</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-icon">👥</div>
+                            <div class="nav-label">Communities</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-icon">👤</div>
+                            <div class="nav-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="screen-title">1. Feed Home (Default Landing)</div>
+            </div>
+
+            <!-- Screen 2: Feed with Community Highlight -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="header-bar">
+                        <div class="logo">HITCHR</div>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔍</div>
+                            <div class="icon-btn">
+                                🔔
+                                <span class="notification-badge">23</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="story-bar">
+                        <div class="story-circle">
+                            <div class="story-avatar add">+</div>
+                            <div class="story-name">Your Story</div>
+                        </div>
+                        <div class="story-circle">
+                            <div class="story-avatar">A</div>
+                            <div class="story-name">Alice</div>
+                        </div>
+                        <div class="story-circle">
+                            <div class="story-avatar" style="background: linear-gradient(135deg, var(--green), var(--blue));">D</div>
+                            <div class="story-name">David</div>
+                        </div>
+                    </div>
+
+                    <div class="feed-content">
+                        <!-- Community Highlight Card -->
+                        <div class="feed-card">
+                            <div class="community-cover">
+                                🏫
+                            </div>
+                            <div class="community-title">
+                                DU Campus Community
+                            </div>
+                            <div class="community-stats">
+                                🎉 Just hit 500 travelers!
+                            </div>
+                            <div class="card-caption">
+                                Our community is growing strong. Top contributor this week: Rahul Sharma with 42 journeys organized! 🏆
+                            </div>
+                            <div class="join-btn">
+                                Join Community
+                            </div>
+                        </div>
+
+                        <!-- Achievement Card -->
+                        <div class="feed-card achievement-card">
+                            <div class="achievement-icon">
+                                🏆
+                            </div>
+                            <div class="achievement-text">
+                                <div class="achievement-name">David Patel</div>
+                                just unlocked
+                            </div>
+                            <div class="achievement-icon" style="font-size: 48px; margin: 16px 0;">
+                                🔗
+                            </div>
+                            <div style="text-align: center; font-weight: 600; font-size: 18px; margin-bottom: 16px;">
+                                City Connector
+                            </div>
+                            <div style="text-align: center; font-size: 13px; margin-bottom: 16px;">
+                                25+ journeys with 15+ different people
+                            </div>
+                            <div class="congratulate-btn">
+                                Congratulate David
+                            </div>
+                        </div>
+
+                        <!-- Journey Story Card -->
+                        <div class="feed-card">
+                            <div class="card-header">
+                                <div class="card-avatar" style="background: linear-gradient(135deg, var(--purple), var(--pink));">P</div>
+                                <div class="card-user-info">
+                                    <div class="card-username">
+                                        Priya Mehta
+                                        <span class="card-badge">✓</span>
+                                    </div>
+                                    <div class="card-meta">5 hours ago</div>
+                                </div>
+                                <div class="card-menu">⋮</div>
+                            </div>
+
+                            <div class="journey-image">
+                                <div style="font-size: 64px;">☕</div>
+                                <div class="journey-overlay">
+                                    📍 Best Coffee Stops on MG Road
+                                </div>
+                            </div>
+
+                            <div class="card-caption">
+                                Route recommendation: Must-try coffee shops along MG Road. Perfect for a Sunday drive! 🚗☕
+                            </div>
+
+                            <div class="card-actions">
+                                <div class="action-btn">
+                                    <span class="icon">❤️</span>
+                                    <span>56</span>
+                                </div>
+                                <div class="action-btn">
+                                    <span class="icon">💬</span>
+                                    <span>15</span>
+                                </div>
+                                <div class="action-btn">
+                                    <span class="icon">🔖</span>
+                                    <span>32</span>
+                                </div>
+                                <div class="action-btn">
+                                    <span class="icon">📤</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bottom-nav">
+                        <div class="nav-item active">
+                            <div class="nav-icon">🏠</div>
+                            <div class="nav-label">Feed</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-icon">🗺️</div>
+                            <div class="nav-label">Map</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-icon">👥</div>
+                            <div class="nav-label">Communities</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-icon">👤</div>
+                            <div class="nav-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="screen-title">2. Feed with Community & Achievement</div>
+            </div>
+
+            <!-- Screen 3: Story Fullscreen View -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="story-content">
+                        <div class="story-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="animation-delay: 3s;"></div>
+                            </div>
+                            <div class="progress-bar"></div>
+                        </div>
+
+                        <div class="story-user-info">
+                            <div class="story-user-avatar" style="background: linear-gradient(135deg, var(--coral), var(--orange));"></div>
+                            <div class="story-username">Alice Kumar</div>
+                            <div class="story-close">✕</div>
+                        </div>
+
+                        <div class="story-media">
+                            <div>
+                                <div style="font-size: 80px; margin-bottom: 20px;">🌄</div>
+                                <div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">
+                                    Amazing Nandi Hills Drive
+                                </div>
+                                <div style="font-size: 14px; opacity: 0.9;">
+                                    📍 Koramangala → Nandi Hills<br>
+                                    42 km • 1h 12m
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="position: absolute; bottom: 80px; left: 0; right: 0; padding: 20px;">
+                            <div style="background: rgba(0,0,0,0.4); border-radius: 24px; padding: 16px; color: white; text-align: center;">
+                                Swipe up to connect
+                                <div style="margin-top: 8px; font-size: 24px;">⬆️</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="screen-title">3. Story Fullscreen View</div>
+            </div>
+
+            <!-- Screen 4: Hit Action Modal -->
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="header-bar">
+                        <div class="logo">HITCHR</div>
+                        <div class="header-icons">
+                            <div class="icon-btn">🔍</div>
+                            <div class="icon-btn">
+                                🔔
+                                <span class="notification-badge">23</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-content">
+                        <!-- Journey Story Card (Blurred) -->
+                        <div class="feed-card" style="filter: blur(2px); opacity: 0.5;">
+                            <div class="card-header">
+                                <div class="card-avatar">A</div>
+                                <div class="card-user-info">
+                                    <div class="card-username">
+                                        Alice Kumar 🌟
+                                    </div>
+                                    <div class="card-meta">2 hours ago</div>
+                                </div>
+                            </div>
+
+                            <div class="journey-image">
+                                <div style="font-size: 64px;">🌄</div>
+                            </div>
+
+                            <div class="card-caption">
+                                Best drive ever! Caught the most amazing sunset...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hit Modal -->
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: white; border-radius: 24px 24px 0 0; padding: 24px; box-shadow: 0 -4px 20px rgba(0,0,0,0.2);">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <div style="font-size: 48px; margin-bottom: 12px;">⚡</div>
+                            <div style="font-size: 18px; font-weight: 600; color: var(--charcoal); margin-bottom: 4px;">
+                                Connect with Alice?
+                            </div>
+                            <div style="font-size: 13px; color: var(--gray-500);">
+                                Choose how you'd like to connect
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="background: var(--blue); color: white; padding: 16px; border-radius: 12px; text-align: center; font-weight: 600; cursor: pointer;">
+                                💬 Send Message
+                            </div>
+                            <div style="background: var(--green); color: white; padding: 16px; border-radius: 12px; text-align: center; font-weight: 600; cursor: pointer;">
+                                🚗 Travel Together Next Time
+                            </div>
+                            <div style="background: var(--gray-100); color: var(--charcoal); padding: 16px; border-radius: 12px; text-align: center; font-weight: 600; cursor: pointer;">
+                                ⭐ Just Appreciate
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="screen-title">4. "Hit" Action Modal</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <p><strong>Hitchr Feed Design:</strong> Social-first experience where movement creates content</p>
+            <p>Story Bar • Journey Stories • Live Activities • Trip Clusters • Community Highlights</p>
+            <p style="margin-top: 20px; opacity: 0.7;">Feed Wireframes v1.0 | January 2026</p>
+        </div>
+    </div>
+</body>
+</html>
+
+
+

@@ -6,6 +6,7 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
+    console.log('🌐 API Service initialized with baseURL:', API_URL);
     this.client = axios.create({
       baseURL: API_URL,
       timeout: 30000,
@@ -76,8 +77,11 @@ class ApiService {
         }
 
         if (!error.response) {
-          console.error('Network error');
-          return Promise.reject(new Error('Network error. Please check your connection.'));
+          console.error('Network error:', error.message);
+          // Return a more descriptive error
+          const networkError = new Error('Network error. Please check your connection and ensure backend is running.');
+          (networkError as any).isNetworkError = true;
+          return Promise.reject(networkError);
         }
 
         // Return structured error
@@ -158,7 +162,7 @@ class ApiService {
     return this.patch('/users/me', data);
   }
 
-  // Pilot endpoints
+  // Location endpoints
   async updateLocation(location: { latitude: number; longitude: number }) {
     return this.post('/pilot/location', {
       latitude: location.latitude,
@@ -166,9 +170,44 @@ class ApiService {
     });
   }
 
+  // Set or update pilot destination
+  async setPilotDestination(input: { destinationLat: number; destinationLng: number; originLat?: number; originLng?: number }) {
+    return this.patch('/location/destination', {
+      destinationLat: input.destinationLat,
+      destinationLng: input.destinationLng,
+      originLat: input.originLat,
+      originLng: input.originLng,
+    });
+  }
+
+  /**
+   * @deprecated Use useNearbyUsers() hook instead for unified data pipeline
+   */
   async getNearbyPilots(latitude: number, longitude: number, radius: number = 5000) {
     const response = await this.get(`/pilot/nearby?lat=${latitude}&lng=${longitude}&radius=${radius}`);
     return response.pilots || [];
+  }
+
+  // Nearby users endpoint (unified)
+  async getNearbyUsers(params: { lat: number; lng: number; radius?: number; withMocks?: boolean }) {
+    const queryParams = new URLSearchParams({
+      lat: params.lat.toString(),
+      lng: params.lng.toString(),
+      radius: (params.radius || 5000).toString(),
+      withMocks: params.withMocks ? 'true' : 'false',
+    });
+    return this.get(`/nearby?${queryParams}`);
+  }
+
+  // Directional matching endpoint
+  async getMatchedPilots(payload: {
+    origin: { lat: number; lng: number };
+    destination: { lat: number; lng: number };
+    riderRoute?: Array<{ lat: number; lng: number }>;
+    radius?: number;
+    withMocks?: boolean;
+  }) {
+    return this.post('/nearby/matched', payload);
   }
 
   // Ride endpoints
