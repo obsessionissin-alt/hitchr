@@ -33,3 +33,9 @@ __pycache__/
 
 # Large binaries / installers (do not push)
 *.AppImage
+
+# Env backup (contains secrets – do not push)
+hitchr-env-backup*.zip
+
+# Cursor context backup (chat history – do not push)
+hitchr-cursor-context.zip
